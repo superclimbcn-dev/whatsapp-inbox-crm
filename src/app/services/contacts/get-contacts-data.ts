@@ -122,11 +122,11 @@ export async function getContactsData(
   }
 
   const contactIds = contactRows.map((contact) => contact.id);
+  const contactIdsSet = new Set(contactIds);
   const { data: conversationRows, error: conversationsError } = await admin
     .from("conversations")
     .select("id, contact_id, status, last_message_at, created_at")
     .eq("account_id", internalUser.account_id)
-    .in("contact_id", contactIds)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .returns<ConversationRow[]>();
@@ -138,6 +138,10 @@ export async function getContactsData(
   const recentConversationByContact = new Map<string, ConversationRow>();
 
   for (const conversation of conversationRows) {
+    if (!contactIdsSet.has(conversation.contact_id)) {
+      continue;
+    }
+
     if (!recentConversationByContact.has(conversation.contact_id)) {
       recentConversationByContact.set(conversation.contact_id, conversation);
     }
