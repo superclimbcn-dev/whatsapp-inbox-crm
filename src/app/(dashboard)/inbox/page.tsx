@@ -1,5 +1,6 @@
 import { getInboxData } from "@/app/services/inbox/get-inbox-data";
 import { ConversationThread } from "@/web/components/conversation/conversation-thread";
+import { InboxAutoRefresh } from "@/web/components/inbox/inbox-auto-refresh";
 import { ConversationList } from "@/web/components/inbox/conversation-list";
 import { StatusBadge } from "@/web/components/ui/status-badge";
 import { PanelSurface } from "@/web/components/ui/panel-surface";
@@ -29,6 +30,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
 
   return (
     <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1.5fr)_360px] xl:gap-6">
+      <InboxAutoRefresh />
       <div className="grid gap-4 xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-6">
         <PanelSurface className="bg-[linear-gradient(180deg,rgba(24,38,62,0.94),rgba(16,27,45,0.9))] p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
