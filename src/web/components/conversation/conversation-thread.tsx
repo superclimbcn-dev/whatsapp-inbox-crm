@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import type { InboxSelection } from "@/app/services/inbox/get-inbox-data";
 import { cn } from "@/lib/utils";
 
@@ -76,13 +77,55 @@ function buildOutboundMessageStatusLabel(
   }
 }
 
+function buildCrmStateLabel(value: CrmState): string {
+  switch (value) {
+    case "nuevo":
+      return "Nuevo";
+    case "pendiente":
+      return "Pendiente";
+    case "presupuesto_enviado":
+      return "Presupuesto enviado";
+    case "agendado":
+      return "Agendado";
+    case "cerrado":
+      return "Cerrado";
+    case "perdido":
+      return "Perdido";
+    default:
+      return "Nuevo";
+  }
+}
+
+function buildCrmStateToneClass(value: CrmState): string {
+  switch (value) {
+    case "pendiente":
+      return "text-warning";
+    case "presupuesto_enviado":
+      return "text-info";
+    case "agendado":
+      return "text-success";
+    case "cerrado":
+      return "text-foreground-soft";
+    case "perdido":
+      return "text-rose-300";
+    case "nuevo":
+    default:
+      return "text-foreground-soft";
+  }
+}
+
 export function ConversationThread({
   conversation,
 }: ConversationThreadProps) {
   const router = useRouter();
+  const [crmInternalNote, setCrmInternalNote] = useState(
+    conversation.crmInternalNote,
+  );
+  const [crmState, setCrmState] = useState<CrmState>(conversation.crmState);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [isSavingCrm, setIsSavingCrm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTakingControl, setIsTakingControl] = useState(false);
   const submitInFlightRef = useRef(false);
@@ -100,6 +143,44 @@ export function ConversationThread({
 
     if (error) {
       setError(null);
+    }
+  }
+
+  async function handleSaveCrm() {
+    if (isSavingCrm) {
+      return;
+    }
+
+    setError(null);
+    setIsSavingCrm(true);
+
+    try {
+      const response = await fetch("/api/conversations/crm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: conversation.conversationId,
+          crmState,
+          internalNote: crmInternalNote,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        setError(result?.error ?? "No pudimos guardar el contexto CRM.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setError("No pudimos guardar el contexto CRM.");
+    } finally {
+      setIsSavingCrm(false);
     }
   }
 
@@ -312,10 +393,68 @@ export function ConversationThread({
         )}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mt-6 border-t border-border pt-5"
-      >
+      <form onSubmit={handleSubmit} className="mt-6 border-t border-border pt-5">
+        <div className="mb-5 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Contexto CRM
+                </p>
+                <p
+                  className={cn(
+                    "mt-2 text-[11px] uppercase tracking-[0.08em]",
+                    buildCrmStateToneClass(crmState),
+                  )}
+                >
+                  {buildCrmStateLabel(crmState)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveCrm}
+                disabled={isSavingCrm || isSubmitting || isGeneratingDraft}
+                className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSavingCrm ? "Guardando..." : "Guardar contexto"}
+              </button>
+            </div>
+
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                Estado del lead
+              </span>
+              <select
+                value={crmState}
+                onChange={(event) => setCrmState(event.target.value as CrmState)}
+                disabled={isSavingCrm}
+                className="mt-2 h-12 w-full rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
+              >
+                {CRM_STATES.map((stateOption) => (
+                  <option key={stateOption} value={stateOption}>
+                    {buildCrmStateLabel(stateOption)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                Nota interna
+              </span>
+              <textarea
+                value={crmInternalNote}
+                onChange={(event) => setCrmInternalNote(event.target.value)}
+                maxLength={500}
+                rows={3}
+                disabled={isSavingCrm}
+                placeholder="Añade una nota operativa breve para esta conversación"
+                className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
+              />
+            </label>
+          </div>
+        </div>
+
         <label className="block">
           <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
             Atajos de presupuesto

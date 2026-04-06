@@ -49,6 +49,43 @@ function buildControlToneClass(
   }
 }
 
+function buildCrmStateLabel(state: InboxConversation["crmState"]): string {
+  switch (state) {
+    case "nuevo":
+      return "Nuevo";
+    case "pendiente":
+      return "Pendiente";
+    case "presupuesto_enviado":
+      return "Presupuesto";
+    case "agendado":
+      return "Agendado";
+    case "cerrado":
+      return "Cerrado";
+    case "perdido":
+      return "Perdido";
+    default:
+      return "Nuevo";
+  }
+}
+
+function buildCrmToneClass(state: InboxConversation["crmState"]): string {
+  switch (state) {
+    case "pendiente":
+      return "text-warning";
+    case "presupuesto_enviado":
+      return "text-info";
+    case "agendado":
+      return "text-success";
+    case "cerrado":
+      return "text-foreground-soft";
+    case "perdido":
+      return "text-rose-300";
+    case "nuevo":
+    default:
+      return "text-foreground-soft";
+  }
+}
+
 export function ConversationList({
   conversations,
   selectedConversationId,
@@ -99,6 +136,14 @@ export function ConversationList({
             </div>
             <p className="mt-3 line-clamp-2 text-xs leading-6 text-foreground-muted/76">
               {conversation.preview}
+            </p>
+            <p
+              className={cn(
+                "mt-2 text-[11px] uppercase tracking-[0.08em]",
+                buildCrmToneClass(conversation.crmState),
+              )}
+            >
+              {buildCrmStateLabel(conversation.crmState)}
             </p>
             <p
               className={cn(

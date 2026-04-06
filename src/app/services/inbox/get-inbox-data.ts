@@ -3,6 +3,14 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
+import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
+
+type ConversationMetadata = {
+  crm?: {
+    internal_note?: string | null;
+    state?: CrmState;
+  };
+};
 
 type ConversationRow = {
   assigned_user_id: string | null;
@@ -10,6 +18,7 @@ type ConversationRow = {
   created_at: string;
   id: string;
   last_message_at: string | null;
+  metadata: ConversationMetadata | null;
   status: "closed" | "open" | "pending";
 };
 
@@ -60,9 +69,10 @@ type MessageRow = {
 };
 
 export type InboxConversation = {
+  contactId: string;
   controlLabel: string;
   controlState: "free" | "mine" | "other";
-  contactId: string;
+  crmState: CrmState;
   displayName: string;
   id: string;
   lastMessageAt: string | null;
@@ -94,6 +104,8 @@ export type InboxSelection = {
   conversationId: string;
   controlLabel: string;
   controlState: "free" | "mine" | "other";
+  crmInternalNote: string;
+  crmState: CrmState;
   isTakeControlAvailable: boolean;
   messages: InboxMessage[];
   ownerUserId: string | null;
@@ -103,6 +115,7 @@ export type InboxSelection = {
 
 export type InboxData = {
   conversations: InboxConversation[];
+  crmFilter: CrmState | "all";
   selectedConversation: InboxSelection | null;
   totalConversations: number;
 };
@@ -188,8 +201,19 @@ function buildControlData(input: {
   };
 }
 
+function resolveCrmState(metadata: ConversationMetadata | null): CrmState {
+  const crmState = metadata?.crm?.state;
+
+  return crmState && CRM_STATES.includes(crmState) ? crmState : "nuevo";
+}
+
+function resolveCrmInternalNote(metadata: ConversationMetadata | null): string {
+  return metadata?.crm?.internal_note?.trim() || "";
+}
+
 export async function getInboxData(
   selectedConversationId?: string,
+  crmFilter: CrmState | "all" = "all",
 ): Promise<InboxData> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -199,6 +223,7 @@ export async function getInboxData(
   if (!user) {
     return {
       conversations: [],
+      crmFilter,
       selectedConversation: null,
       totalConversations: 0,
     };
@@ -208,7 +233,9 @@ export async function getInboxData(
   const admin = createSupabaseAdminClient();
   const { data: conversationRows, error: conversationsError } = await admin
     .from("conversations")
-    .select("id, contact_id, assigned_user_id, status, last_message_at, created_at")
+    .select(
+      "id, contact_id, assigned_user_id, status, last_message_at, created_at, metadata",
+    )
     .eq("account_id", internalUser.account_id)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -221,6 +248,7 @@ export async function getInboxData(
   if (conversationRows.length === 0) {
     return {
       conversations: [],
+      crmFilter,
       selectedConversation: null,
       totalConversations: 0,
     };
@@ -279,6 +307,9 @@ export async function getInboxData(
 
   const contactsMap = new Map(contacts.map((contact) => [contact.id, contact]));
   const latestMessageByConversation = new Map<string, MessagePreviewRow>();
+  const metadataByConversationId = new Map(
+    conversationRows.map((conversation) => [conversation.id, conversation.metadata]),
+  );
   const usersMap = new Map(users.map((item) => [item.id, item]));
 
   for (const message of previewMessages) {
@@ -287,47 +318,60 @@ export async function getInboxData(
     }
   }
 
-  const conversations = conversationRows.map((conversation) => {
-    const contact = contactsMap.get(conversation.contact_id);
-    const latestMessage = latestMessageByConversation.get(conversation.id);
-    const controlData = buildControlData({
-      assignedUserId: conversation.assigned_user_id,
-      currentUserId: internalUser.id,
-      usersMap,
-    });
+  const conversations = conversationRows
+    .map((conversation) => {
+      const contact = contactsMap.get(conversation.contact_id);
+      const latestMessage = latestMessageByConversation.get(conversation.id);
+      const controlData = buildControlData({
+        assignedUserId: conversation.assigned_user_id,
+        currentUserId: internalUser.id,
+        usersMap,
+      });
 
+      return {
+        contactId: conversation.contact_id,
+        controlLabel: controlData.controlLabel,
+        controlState: controlData.controlState,
+        crmState: resolveCrmState(conversation.metadata),
+        displayName:
+          contact?.display_name ?? contact?.phone_e164 ?? "Contacto sin nombre",
+        id: conversation.id,
+        lastMessageAt:
+          conversation.last_message_at ??
+          latestMessage?.sent_at ??
+          latestMessage?.created_at ??
+          null,
+        ownerUserId: conversation.assigned_user_id,
+        phone: contact?.phone_e164 ?? "Sin número disponible",
+        preview: buildMessagePreview(latestMessage),
+        status: conversation.status,
+      } satisfies InboxConversation;
+    })
+    .filter((conversation) =>
+      crmFilter === "all" ? true : conversation.crmState === crmFilter,
+    );
+
+  if (conversations.length === 0) {
     return {
-      controlLabel: controlData.controlLabel,
-      controlState: controlData.controlState,
-      contactId: conversation.contact_id,
-      displayName:
-        contact?.display_name ?? contact?.phone_e164 ?? "Contacto sin nombre",
-      id: conversation.id,
-      lastMessageAt:
-        conversation.last_message_at ??
-        latestMessage?.sent_at ??
-        latestMessage?.created_at ??
-        null,
-      ownerUserId: conversation.assigned_user_id,
-      phone: contact?.phone_e164 ?? "Sin número disponible",
-      preview: buildMessagePreview(latestMessage),
-      status: conversation.status,
-    } satisfies InboxConversation;
-  });
+      conversations: [],
+      crmFilter,
+      selectedConversation: null,
+      totalConversations: 0,
+    };
+  }
 
   const selectedConversation =
     conversations.find(
       (conversation) => conversation.id === selectedConversationId,
     ) ?? conversations[0];
 
-  const { data: selectedMessages, error: selectedMessagesError } =
-    await admin
-      .from("messages")
-      .select("id, direction, type, body, status, sent_at, created_at")
-      .eq("conversation_id", selectedConversation.id)
-      .order("sent_at", { ascending: true, nullsFirst: true })
-      .order("created_at", { ascending: true })
-      .returns<MessageRow[]>();
+  const { data: selectedMessages, error: selectedMessagesError } = await admin
+    .from("messages")
+    .select("id, direction, type, body, status, sent_at, created_at")
+    .eq("conversation_id", selectedConversation.id)
+    .order("sent_at", { ascending: true, nullsFirst: true })
+    .order("created_at", { ascending: true })
+    .returns<MessageRow[]>();
 
   if (selectedMessagesError || !selectedMessages) {
     throw new Error("No pudimos cargar los mensajes de la conversación.");
@@ -335,11 +379,16 @@ export async function getInboxData(
 
   return {
     conversations,
+    crmFilter,
     selectedConversation: {
       contactName: selectedConversation.displayName,
       conversationId: selectedConversation.id,
       controlLabel: selectedConversation.controlLabel,
       controlState: selectedConversation.controlState,
+      crmInternalNote: resolveCrmInternalNote(
+        metadataByConversationId.get(selectedConversation.id) ?? null,
+      ),
+      crmState: selectedConversation.crmState,
       isTakeControlAvailable: selectedConversation.controlState === "free",
       ownerUserId: selectedConversation.ownerUserId,
       messages: selectedMessages.map((message) => ({
