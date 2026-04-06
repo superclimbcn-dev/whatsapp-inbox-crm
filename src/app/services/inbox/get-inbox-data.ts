@@ -127,9 +127,17 @@ export type InboxSelection = {
 export type InboxData = {
   conversations: InboxConversation[];
   crmFilter: CrmState | "all";
+  ownerFilter: "all" | "free" | "mine" | "other";
   selectedConversation: InboxSelection | null;
   totalConversations: number;
 };
+
+function matchesOwnerFilter(
+  controlState: InboxConversation["controlState"],
+  ownerFilter: InboxData["ownerFilter"],
+): boolean {
+  return ownerFilter === "all" ? true : controlState === ownerFilter;
+}
 
 function buildMessagePreview(message: MessagePreviewRow | undefined): string {
   if (!message) {
@@ -225,6 +233,7 @@ function resolveCrmInternalNote(metadata: ConversationMetadata | null): string {
 export async function getInboxData(
   selectedConversationId?: string,
   crmFilter: CrmState | "all" = "all",
+  ownerFilter: InboxData["ownerFilter"] = "all",
 ): Promise<InboxData> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -235,6 +244,7 @@ export async function getInboxData(
     return {
       conversations: [],
       crmFilter,
+      ownerFilter,
       selectedConversation: null,
       totalConversations: 0,
     };
@@ -270,6 +280,7 @@ export async function getInboxData(
     return {
       conversations: [],
       crmFilter,
+      ownerFilter,
       selectedConversation: null,
       totalConversations: 0,
     };
@@ -370,12 +381,16 @@ export async function getInboxData(
     })
     .filter((conversation) =>
       crmFilter === "all" ? true : conversation.crmState === crmFilter,
+    )
+    .filter((conversation) =>
+      matchesOwnerFilter(conversation.controlState, ownerFilter),
     );
 
   if (conversations.length === 0) {
     return {
       conversations: [],
       crmFilter,
+      ownerFilter,
       selectedConversation: null,
       totalConversations: 0,
     };
@@ -401,6 +416,7 @@ export async function getInboxData(
   return {
     conversations,
     crmFilter,
+    ownerFilter,
     selectedConversation: {
       contactName: selectedConversation.displayName,
       conversationId: selectedConversation.id,

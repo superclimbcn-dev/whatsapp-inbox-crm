@@ -28,13 +28,34 @@ function buildStatusLabel(
   }
 }
 
-function buildContactsHref(contactId: string, searchTerm: string): string {
+function buildConversationFilterLabel(
+  value: "all" | "with_conversation" | "without_conversation",
+): string {
+  switch (value) {
+    case "with_conversation":
+      return "Con conversación";
+    case "without_conversation":
+      return "Sin conversación";
+    default:
+      return "Todos";
+  }
+}
+
+function buildContactsHref(
+  contactId: string,
+  searchTerm: string,
+  conversationFilter: "all" | "with_conversation" | "without_conversation",
+): string {
   const params = new URLSearchParams();
 
   params.set("contact", contactId);
 
   if (searchTerm) {
     params.set("q", searchTerm);
+  }
+
+  if (conversationFilter !== "all") {
+    params.set("conversation", conversationFilter);
   }
 
   return `/contacts?${params.toString()}`;
@@ -60,6 +81,11 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
     typeof searchParams.contact === "string" ? searchParams.contact : undefined;
   const searchTerm =
     typeof searchParams.q === "string" ? searchParams.q : undefined;
+  const conversationFilter =
+    searchParams.conversation === "with_conversation" ||
+    searchParams.conversation === "without_conversation"
+      ? searchParams.conversation
+      : "all";
   const importedCount = parseImportMetric(searchParams.imported);
   const duplicatedCount = parseImportMetric(searchParams.duplicated);
   const ignoredCount = parseImportMetric(searchParams.ignored);
@@ -67,7 +93,11 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
     typeof searchParams.import_error === "string"
       ? searchParams.import_error
       : null;
-  const contactsData = await getContactsData(selectedContactId, searchTerm);
+  const contactsData = await getContactsData(
+    selectedContactId,
+    searchTerm,
+    conversationFilter,
+  );
   const hasContacts = contactsData.contacts.length > 0;
   const selectedContact = contactsData.selectedContact;
 
@@ -167,6 +197,15 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   placeholder="Buscar por nombre o teléfono"
                   className="h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
                 />
+                <input
+                  type="hidden"
+                  name="conversation"
+                  value={
+                    contactsData.conversationFilter === "all"
+                      ? ""
+                      : contactsData.conversationFilter
+                  }
+                />
                 <button
                   type="submit"
                   className="h-12 rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
@@ -176,6 +215,41 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               </div>
             </label>
           </form>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(["all", "with_conversation", "without_conversation"] as const).map(
+              (filterOption) => {
+                const params = new URLSearchParams();
+
+                if (contactsData.searchTerm) {
+                  params.set("q", contactsData.searchTerm);
+                }
+
+                if (filterOption !== "all") {
+                  params.set("conversation", filterOption);
+                }
+
+                const href = params.toString()
+                  ? `/contacts?${params.toString()}`
+                  : "/contacts";
+                const isActive =
+                  contactsData.conversationFilter === filterOption;
+
+                return (
+                  <a
+                    key={filterOption}
+                    href={href}
+                    className={
+                      isActive
+                        ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                        : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                    }
+                  >
+                    {buildConversationFilterLabel(filterOption)}
+                  </a>
+                );
+              },
+            )}
+          </div>
         </div>
 
         <div className="grid min-h-[520px] divide-y divide-border xl:grid-cols-[320px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
@@ -202,7 +276,11 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   return (
                     <Link
                       key={contact.id}
-                      href={buildContactsHref(contact.id, contactsData.searchTerm)}
+                      href={buildContactsHref(
+                        contact.id,
+                        contactsData.searchTerm,
+                        contactsData.conversationFilter,
+                      )}
                       className={`block rounded-2xl border px-4 py-4 shadow-[var(--shadow-layer)] transition-all duration-200 ${
                         isActive
                           ? "border-accent/28 bg-[linear-gradient(180deg,rgba(32,46,74,0.98),rgba(18,29,48,0.95))] shadow-[var(--shadow-accent)]"

@@ -41,6 +41,7 @@ function buildCrmFilterLabel(value: CrmState | "all"): string {
 function buildInboxHref(
   conversationId: string | undefined,
   crmFilter: CrmState | "all",
+  ownerFilter: "all" | "free" | "mine" | "other",
 ): string {
   const params = new URLSearchParams();
 
@@ -52,9 +53,26 @@ function buildInboxHref(
     params.set("crm", crmFilter);
   }
 
+  if (ownerFilter !== "all") {
+    params.set("owner", ownerFilter);
+  }
+
   const query = params.toString();
 
   return query ? `/inbox?${query}` : "/inbox";
+}
+
+function buildOwnerFilterLabel(value: "all" | "free" | "mine" | "other"): string {
+  switch (value) {
+    case "mine":
+      return "Bajo mi control";
+    case "free":
+      return "Libres";
+    case "other":
+      return "Tomadas";
+    default:
+      return "Todos";
+  }
 }
 
 export default async function InboxPage(props: PageProps<"/inbox">) {
@@ -68,7 +86,17 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
     CRM_STATES.includes(searchParams.crm as CrmState)
       ? (searchParams.crm as CrmState)
       : "all";
-  const inboxData = await getInboxData(selectedConversationId, crmFilter);
+  const ownerFilter =
+    searchParams.owner === "mine" ||
+    searchParams.owner === "free" ||
+    searchParams.owner === "other"
+      ? searchParams.owner
+      : "all";
+  const inboxData = await getInboxData(
+    selectedConversationId,
+    crmFilter,
+    ownerFilter,
+  );
   const hasConversations = inboxData.conversations.length > 0;
   const selectedConversation = inboxData.selectedConversation;
 
@@ -104,7 +132,11 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               return (
                 <a
                   key={filterOption}
-                  href={buildInboxHref(selectedConversationId, filterOption)}
+                  href={buildInboxHref(
+                    selectedConversationId,
+                    filterOption,
+                    inboxData.ownerFilter,
+                  )}
                   className={
                     isActive
                       ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
@@ -112,6 +144,29 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
                   }
                 >
                   {buildCrmFilterLabel(filterOption)}
+                </a>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(["all", "mine", "free", "other"] as const).map((filterOption) => {
+              const isActive = inboxData.ownerFilter === filterOption;
+
+              return (
+                <a
+                  key={filterOption}
+                  href={buildInboxHref(
+                    selectedConversationId,
+                    inboxData.crmFilter,
+                    filterOption,
+                  )}
+                  className={
+                    isActive
+                      ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                      : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                  }
+                >
+                  {buildOwnerFilterLabel(filterOption)}
                 </a>
               );
             })}
@@ -138,6 +193,8 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               {hasConversations ? (
                 <ConversationList
                   conversations={inboxData.conversations}
+                  crmFilter={inboxData.crmFilter}
+                  ownerFilter={inboxData.ownerFilter}
                   selectedConversationId={
                     selectedConversation?.conversationId ?? null
                   }

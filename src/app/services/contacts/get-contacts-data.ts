@@ -33,6 +33,7 @@ export type ContactListItem = {
 export type SelectedContact = ContactListItem;
 
 export type ContactsData = {
+  conversationFilter: "all" | "with_conversation" | "without_conversation";
   contacts: ContactListItem[];
   searchTerm: string;
   selectedContact: SelectedContact | null;
@@ -67,6 +68,7 @@ function compareByRecentActivity(
 export async function getContactsData(
   selectedContactId?: string,
   rawSearchTerm?: string,
+  conversationFilter: ContactsData["conversationFilter"] = "all",
 ): Promise<ContactsData> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -75,6 +77,7 @@ export async function getContactsData(
 
   if (!user) {
     return {
+      conversationFilter,
       contacts: [],
       searchTerm: normalizeSearchTerm(rawSearchTerm),
       selectedContact: null,
@@ -110,6 +113,7 @@ export async function getContactsData(
 
   if (contactRows.length === 0) {
     return {
+      conversationFilter,
       contacts: [],
       searchTerm,
       selectedContact: null,
@@ -153,12 +157,20 @@ export async function getContactsData(
         waContactId: contact.wa_contact_id,
       } satisfies ContactListItem;
     })
+    .filter((contact) =>
+      conversationFilter === "with_conversation"
+        ? Boolean(contact.conversationId)
+        : conversationFilter === "without_conversation"
+          ? !contact.conversationId
+          : true,
+    )
     .sort(compareByRecentActivity);
 
   const selectedContact =
     contacts.find((contact) => contact.id === selectedContactId) ?? contacts[0];
 
   return {
+    conversationFilter,
     contacts,
     searchTerm,
     selectedContact,

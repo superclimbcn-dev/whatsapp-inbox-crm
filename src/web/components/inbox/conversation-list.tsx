@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 
 type ConversationListProps = {
   conversations: InboxConversation[];
+  crmFilter: "all" | InboxConversation["crmState"];
+  ownerFilter: "all" | InboxConversation["controlState"];
   selectedConversationId: string | null;
 };
 
@@ -88,6 +90,8 @@ function buildCrmToneClass(state: InboxConversation["crmState"]): string {
 
 export function ConversationList({
   conversations,
+  crmFilter,
+  ownerFilter,
   selectedConversationId,
 }: ConversationListProps) {
   return (
@@ -98,7 +102,11 @@ export function ConversationList({
         return (
           <Link
             key={conversation.id}
-            href={`/inbox?conversation=${conversation.id}`}
+            href={`/inbox?${new URLSearchParams({
+              conversation: conversation.id,
+              ...(crmFilter !== "all" ? { crm: crmFilter } : {}),
+              ...(ownerFilter !== "all" ? { owner: ownerFilter } : {}),
+            }).toString()}`}
             className={cn(
               "block rounded-2xl border px-4 py-4 shadow-[var(--shadow-layer)] transition-all duration-200",
               isActive
