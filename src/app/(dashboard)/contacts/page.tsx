@@ -122,6 +122,9 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               <StatusBadge tone="accent">
                 {`${contactsData.totalContacts} contactos`}
               </StatusBadge>
+              <StatusBadge tone="info">
+                {`${contactsData.loadedContacts} en esta vista`}
+              </StatusBadge>
               <StatusBadge tone={hasContacts ? "success" : "base"}>
                 {hasContacts ? "Directorio activo" : "Sin contactos"}
               </StatusBadge>
@@ -132,13 +135,22 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  ImportaciÃ³n manual
+                  Importación manual
                 </p>
                 <p className="mt-2 text-sm text-foreground/92">
-                  Importa un CSV con cabecera <span className="font-medium text-foreground">name,phone</span> o <span className="font-medium text-foreground">nombre,telefono</span>.
+                  Importa un CSV con cabecera{" "}
+                  <span className="font-medium text-foreground">
+                    name,phone
+                  </span>{" "}
+                  o{" "}
+                  <span className="font-medium text-foreground">
+                    nombre,telefono
+                  </span>
+                  .
                 </p>
                 <p className="mt-1 text-xs leading-6 text-foreground-soft">
-                  Formato mÃ­nimo, hasta 500 filas y solo contactos con telÃ©fono vÃ¡lido.
+                  Formato mínimo, hasta 500 filas y solo contactos con teléfono
+                  válido.
                 </p>
               </div>
 
@@ -177,9 +189,15 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               duplicatedCount !== null &&
               ignoredCount !== null ? (
               <div className="mt-4 flex flex-wrap gap-3">
-                <StatusBadge tone="success">{`${importedCount} importados`}</StatusBadge>
-                <StatusBadge tone="info">{`${duplicatedCount} duplicados`}</StatusBadge>
-                <StatusBadge tone="base">{`${ignoredCount} ignorados`}</StatusBadge>
+                <StatusBadge tone="success">
+                  {`${importedCount} importados`}
+                </StatusBadge>
+                <StatusBadge tone="info">
+                  {`${duplicatedCount} duplicados`}
+                </StatusBadge>
+                <StatusBadge tone="base">
+                  {`${ignoredCount} ignorados`}
+                </StatusBadge>
               </div>
             ) : null}
           </div>
@@ -421,7 +439,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
             </p>
             <p className="mt-2 text-xs leading-6 text-foreground-soft">
               {hasContacts
-                ? `${contactsData.totalContacts} contactos disponibles en esta cuenta.`
+                ? `${contactsData.totalContacts} contactos disponibles en esta cuenta, con ${contactsData.loadedContacts} cargados en esta vista.`
                 : "Sin contactos disponibles todavía en esta cuenta."}
             </p>
           </div>

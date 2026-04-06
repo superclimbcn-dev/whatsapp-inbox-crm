@@ -20,6 +20,8 @@ type ConversationRow = {
   status: "closed" | "open" | "pending";
 };
 
+const CONTACTS_VIEW_LIMIT = 1000;
+
 export type ContactListItem = {
   conversationId: string | null;
   displayName: string;
@@ -35,6 +37,7 @@ export type SelectedContact = ContactListItem;
 export type ContactsData = {
   conversationFilter: "all" | "with_conversation" | "without_conversation";
   contacts: ContactListItem[];
+  loadedContacts: number;
   searchTerm: string;
   selectedContact: SelectedContact | null;
   totalContacts: number;
@@ -79,6 +82,7 @@ export async function getContactsData(
     return {
       conversationFilter,
       contacts: [],
+      loadedContacts: 0,
       searchTerm: normalizeSearchTerm(rawSearchTerm),
       selectedContact: null,
       totalContacts: 0,
@@ -88,11 +92,21 @@ export async function getContactsData(
   const internalUser = await ensureUserContext(user);
   const admin = createSupabaseAdminClient();
   const searchTerm = normalizeSearchTerm(rawSearchTerm);
+  const { count: totalContacts, error: totalContactsError } = await admin
+    .from("contacts")
+    .select("*", { count: "exact", head: true })
+    .eq("account_id", internalUser.account_id);
+
+  if (totalContactsError) {
+    throw new Error("No pudimos cargar el total de contactos.");
+  }
+
   let contactsQuery = admin
     .from("contacts")
     .select("id, display_name, phone_e164, wa_contact_id, created_at")
     .eq("account_id", internalUser.account_id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(0, CONTACTS_VIEW_LIMIT - 1);
 
   if (searchTerm) {
     const escapedSearchTerm = searchTerm.replace(/[%_,]/g, " ").trim();
@@ -115,9 +129,10 @@ export async function getContactsData(
     return {
       conversationFilter,
       contacts: [],
+      loadedContacts: 0,
       searchTerm,
       selectedContact: null,
-      totalContacts: 0,
+      totalContacts: totalContacts ?? 0,
     };
   }
 
@@ -176,8 +191,9 @@ export async function getContactsData(
   return {
     conversationFilter,
     contacts,
+    loadedContacts: contacts.length,
     searchTerm,
     selectedContact,
-    totalContacts: contacts.length,
+    totalContacts: totalContacts ?? contacts.length,
   };
 }
