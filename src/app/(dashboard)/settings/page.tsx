@@ -6,7 +6,13 @@ function buildChannelStatusLabel(status: "active" | "inactive"): string {
   return status === "active" ? "Activo" : "Inactivo";
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage(props: PageProps<"/settings">) {
+  const searchParams = await props.searchParams;
+  const quickRepliesSaved = searchParams.quick_replies_saved === "1";
+  const quickRepliesError =
+    typeof searchParams.quick_replies_error === "string"
+      ? searchParams.quick_replies_error
+      : null;
   const settingsData = await getSettingsData();
 
   return (
@@ -175,6 +181,102 @@ export default async function SettingsPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-border p-6">
+          <div className="rounded-[28px] border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.92),rgba(13,23,39,0.84))] p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Respuestas rápidas
+                </p>
+                <h4 className="mt-3 text-xl font-semibold text-foreground">
+                  Biblioteca operativa de presupuesto
+                </h4>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-foreground-muted/82">
+                  Edita las cuatro respuestas rápidas disponibles en el composer
+                  de Inbox. Las inactivas siguen editables aquí, pero no se muestran al agente.
+                </p>
+              </div>
+              <StatusBadge tone="info">
+                {`${settingsData.quickReplies.filter((reply) => reply.isActive).length} activas`}
+              </StatusBadge>
+            </div>
+
+            {quickRepliesError ? (
+              <p className="mt-4 rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
+                {quickRepliesError}
+              </p>
+            ) : quickRepliesSaved ? (
+              <p className="mt-4 rounded-2xl border border-success/20 bg-[rgba(31,74,58,0.24)] px-4 py-3 text-sm text-emerald-200">
+                Las respuestas rápidas se guardaron correctamente.
+              </p>
+            ) : null}
+
+            <form
+              action="/api/settings/quick-replies"
+              method="post"
+              className="mt-5 space-y-4"
+            >
+              {settingsData.quickReplies.map((quickReply) => (
+                <div
+                  key={quickReply.id}
+                  className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(14,23,38,0.92),rgba(11,18,31,0.88))] p-4"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex-1 space-y-4">
+                      <label className="block">
+                        <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                          Etiqueta
+                        </span>
+                        <input
+                          type="text"
+                          name={`label_${quickReply.id}`}
+                          defaultValue={quickReply.label}
+                          maxLength={60}
+                          className="mt-2 h-11 w-full rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                          Texto
+                        </span>
+                        <textarea
+                          name={`text_${quickReply.id}`}
+                          defaultValue={quickReply.text}
+                          rows={3}
+                          maxLength={280}
+                          className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
+                        />
+                      </label>
+                    </div>
+
+                    <label className="flex min-w-[130px] items-center gap-3 rounded-2xl border border-border bg-background-soft/70 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        name={`active_${quickReply.id}`}
+                        defaultChecked={quickReply.isActive}
+                        className="size-4 rounded border border-border bg-background-soft text-accent"
+                      />
+                      <span className="text-sm text-foreground-soft">
+                        Activa
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  className="h-12 rounded-2xl border border-[rgba(93,112,161,0.32)] bg-[linear-gradient(180deg,rgba(24,35,57,0.96),rgba(18,28,45,0.94))] px-5 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(8,12,23,0.22)] transition hover:border-[rgba(108,128,188,0.42)] hover:bg-[linear-gradient(180deg,rgba(30,43,69,0.98),rgba(22,33,53,0.96))]"
+                >
+                  Guardar respuestas rápidas
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </PanelSurface>

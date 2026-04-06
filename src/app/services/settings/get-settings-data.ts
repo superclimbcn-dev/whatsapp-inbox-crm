@@ -3,10 +3,17 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
+import {
+  resolveQuickReplies,
+  type QuickReply,
+} from "@/core/settings/quick-replies";
 import { readOpenAIEnv } from "@/lib/env";
 
 type AccountRow = {
   id: string;
+  metadata: {
+    quick_replies?: unknown;
+  } | null;
   name: string;
   slug: string;
   timezone: string;
@@ -44,6 +51,7 @@ export type SettingsAI = {
 export type SettingsData = {
   ai: SettingsAI;
   channel: SettingsChannel;
+  quickReplies: QuickReply[];
   totalChannels: number;
   workspace: SettingsWorkspace;
 };
@@ -90,7 +98,7 @@ export async function getSettingsData(): Promise<SettingsData> {
     await Promise.all([
       admin
         .from("accounts")
-        .select("id, name, slug, timezone")
+        .select("id, name, slug, timezone, metadata")
         .eq("id", internalUser.account_id)
         .maybeSingle<AccountRow>(),
       admin
@@ -122,6 +130,7 @@ export async function getSettingsData(): Promise<SettingsData> {
           status: selectedChannel.status,
         }
       : null,
+    quickReplies: resolveQuickReplies(workspace.metadata?.quick_replies),
     totalChannels: channels.length,
     workspace: {
       id: workspace.id,

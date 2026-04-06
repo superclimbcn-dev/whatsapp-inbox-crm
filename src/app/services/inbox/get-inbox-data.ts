@@ -4,6 +4,10 @@ import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
 import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
+import {
+  resolveQuickReplies,
+  type QuickReply,
+} from "@/core/settings/quick-replies";
 
 type ConversationMetadata = {
   crm?: {
@@ -68,6 +72,12 @@ type MessageRow = {
     | "video";
 };
 
+type AccountRow = {
+  metadata: {
+    quick_replies?: unknown;
+  } | null;
+};
+
 export type InboxConversation = {
   contactId: string;
   controlLabel: string;
@@ -110,6 +120,7 @@ export type InboxSelection = {
   messages: InboxMessage[];
   ownerUserId: string | null;
   phone: string;
+  quickReplies: QuickReply[];
   status: "closed" | "open" | "pending";
 };
 
@@ -231,6 +242,16 @@ export async function getInboxData(
 
   const internalUser = await ensureUserContext(user);
   const admin = createSupabaseAdminClient();
+  const { data: account, error: accountError } = await admin
+    .from("accounts")
+    .select("metadata")
+    .eq("id", internalUser.account_id)
+    .maybeSingle<AccountRow>();
+
+  if (accountError || !account) {
+    throw new Error("No pudimos cargar la configuración del inbox.");
+  }
+
   const { data: conversationRows, error: conversationsError } = await admin
     .from("conversations")
     .select(
@@ -400,6 +421,9 @@ export async function getInboxData(
         type: message.type,
       })),
       phone: selectedConversation.phone,
+      quickReplies: resolveQuickReplies(account.metadata?.quick_replies).filter(
+        (reply) => reply.isActive,
+      ),
       status: selectedConversation.status,
     },
     totalConversations: conversations.length,

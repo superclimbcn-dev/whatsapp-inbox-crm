@@ -11,29 +11,6 @@ type ConversationThreadProps = {
   conversation: InboxSelection;
 };
 
-const QUICK_REPLIES = [
-  {
-    id: "photos",
-    label: "Pedir fotos",
-    text: "Para prepararte un presupuesto preciso, ¿me puedes enviar fotos del sofá, alfombra o superficie a tratar?",
-  },
-  {
-    id: "location",
-    label: "Pedir ubicación",
-    text: "¿Me compartes la zona o ubicación del servicio para revisar disponibilidad y presupuesto?",
-  },
-  {
-    id: "service",
-    label: "Tipo de servicio",
-    text: "¿Qué servicio necesitas exactamente: limpieza de sofá, impermeabilización o lavado de alfombra/tapete?",
-  },
-  {
-    id: "measurements",
-    label: "Medidas / cantidad",
-    text: "¿Me indicas cuántas piezas son y las medidas aproximadas para calcular mejor el presupuesto?",
-  },
-] as const;
-
 function formatMessageDate(value: string): string {
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
@@ -460,7 +437,7 @@ export function ConversationThread({
             Atajos de presupuesto
           </span>
           <div className="mt-3 flex flex-wrap gap-2">
-            {QUICK_REPLIES.map((quickReply) => (
+            {conversation.quickReplies.map((quickReply) => (
               <button
                 key={quickReply.id}
                 type="button"
