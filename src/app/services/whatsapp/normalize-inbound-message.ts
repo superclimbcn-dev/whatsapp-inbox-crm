@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import type { JsonObject, ParsedInboundMessage } from "@/adapters/whatsapp/webhook-payload";
+import { normalizePhone } from "@/core/contacts/normalize-phone";
 
 type ChannelContext = {
   accountId: string;
@@ -25,20 +26,6 @@ type NormalizedInboundMessageResult = {
   conversationId: string;
   messageId: string;
 };
-
-function normalizePhone(phone: string | null): string | null {
-  if (!phone) {
-    return null;
-  }
-
-  const digits = phone.replace(/[^\d+]/g, "");
-
-  if (!digits) {
-    return null;
-  }
-
-  return digits.startsWith("+") ? digits : `+${digits}`;
-}
 
 function buildContactMetadata(message: ParsedInboundMessage): JsonObject {
   return {

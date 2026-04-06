@@ -40,12 +40,33 @@ function buildContactsHref(contactId: string, searchTerm: string): string {
   return `/contacts?${params.toString()}`;
 }
 
+function parseImportMetric(value: string | string[] | undefined): number | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
 export default async function ContactsPage(props: PageProps<"/contacts">) {
   const searchParams = await props.searchParams;
   const selectedContactId =
     typeof searchParams.contact === "string" ? searchParams.contact : undefined;
   const searchTerm =
     typeof searchParams.q === "string" ? searchParams.q : undefined;
+  const importedCount = parseImportMetric(searchParams.imported);
+  const duplicatedCount = parseImportMetric(searchParams.duplicated);
+  const ignoredCount = parseImportMetric(searchParams.ignored);
+  const importError =
+    typeof searchParams.import_error === "string"
+      ? searchParams.import_error
+      : null;
   const contactsData = await getContactsData(selectedContactId, searchTerm);
   const hasContacts = contactsData.contacts.length > 0;
   const selectedContact = contactsData.selectedContact;
@@ -67,7 +88,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 real de WhatsApp y permite abrir su conversación vinculada.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <StatusBadge tone="accent">
                 {`${contactsData.totalContacts} contactos`}
               </StatusBadge>
@@ -75,6 +96,62 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 {hasContacts ? "Directorio activo" : "Sin contactos"}
               </StatusBadge>
             </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(14,23,38,0.92),rgba(11,18,31,0.9))] p-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  ImportaciÃ³n manual
+                </p>
+                <p className="mt-2 text-sm text-foreground/92">
+                  Importa un CSV con cabecera <span className="font-medium text-foreground">name,phone</span> o <span className="font-medium text-foreground">nombre,telefono</span>.
+                </p>
+                <p className="mt-1 text-xs leading-6 text-foreground-soft">
+                  Formato mÃ­nimo, hasta 500 filas y solo contactos con telÃ©fono vÃ¡lido.
+                </p>
+              </div>
+
+              <form
+                action="/api/contacts/import-csv"
+                method="post"
+                encType="multipart/form-data"
+                className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center"
+              >
+                <input type="hidden" name="q" value={contactsData.searchTerm} />
+                <input
+                  type="hidden"
+                  name="contact"
+                  value={selectedContact?.id ?? ""}
+                />
+                <input
+                  type="file"
+                  name="file"
+                  accept=".csv,text/csv"
+                  className="block h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(46,62,109,0.96)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+                />
+                <button
+                  type="submit"
+                  className="h-12 rounded-2xl border border-[rgba(93,112,161,0.32)] bg-[linear-gradient(180deg,rgba(24,35,57,0.96),rgba(18,28,45,0.94))] px-5 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(8,12,23,0.22)] transition hover:border-[rgba(108,128,188,0.42)] hover:bg-[linear-gradient(180deg,rgba(30,43,69,0.98),rgba(22,33,53,0.96))]"
+                >
+                  Importar CSV
+                </button>
+              </form>
+            </div>
+
+            {importError ? (
+              <p className="mt-4 rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
+                {importError}
+              </p>
+            ) : importedCount !== null &&
+              duplicatedCount !== null &&
+              ignoredCount !== null ? (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <StatusBadge tone="success">{`${importedCount} importados`}</StatusBadge>
+                <StatusBadge tone="info">{`${duplicatedCount} duplicados`}</StatusBadge>
+                <StatusBadge tone="base">{`${ignoredCount} ignorados`}</StatusBadge>
+              </div>
+            ) : null}
           </div>
 
           <form className="mt-6" action="/contacts" method="get">
