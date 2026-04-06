@@ -92,7 +92,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 />
                 <button
                   type="submit"
-                  className="h-12 rounded-2xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-[#6170ff]"
+                  className="h-12 rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
                 >
                   Buscar
                 </button>
@@ -222,7 +222,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   {selectedContact.conversationId ? (
                     <Link
                       href={`/inbox?conversation=${selectedContact.conversationId}`}
-                      className="inline-flex h-12 items-center rounded-2xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-[#6170ff]"
+                      className="inline-flex h-12 items-center rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
                     >
                       Abrir conversación en Inbox
                     </Link>
