@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { InboxSelection } from "@/app/services/inbox/get-inbox-data";
 import { cn } from "@/lib/utils";
@@ -61,9 +61,14 @@ export function ConversationThread({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTakingControl, setIsTakingControl] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submitInFlightRef.current) {
+      return;
+    }
 
     const trimmedDraft = draft.trim();
 
@@ -73,6 +78,7 @@ export function ConversationThread({
     }
 
     setError(null);
+    submitInFlightRef.current = true;
     setIsSubmitting(true);
 
     const response = await fetch("/api/whatsapp/send", {
@@ -92,11 +98,13 @@ export function ConversationThread({
 
     if (!response.ok) {
       setError(result?.error ?? "No pudimos enviar el mensaje.");
+      submitInFlightRef.current = false;
       setIsSubmitting(false);
       return;
     }
 
     setDraft("");
+    submitInFlightRef.current = false;
     setIsSubmitting(false);
     router.refresh();
   }
@@ -203,7 +211,17 @@ export function ConversationThread({
                       {formatMessageDate(message.sentAt)}
                     </span>
                     {!isInbound ? (
-                      <span className="mt-1 block text-[11px] uppercase tracking-[0.08em] text-foreground-soft">
+                      <span
+                        className={cn(
+                          "mt-1 block text-[11px] uppercase tracking-[0.08em]",
+                          message.status === "sent" && "text-foreground-soft",
+                          message.status === "delivered" && "text-info",
+                          message.status === "read" && "text-success",
+                          message.status === "failed" && "text-warning",
+                          message.status === "queued" && "text-foreground-soft",
+                          message.status === "received" && "text-foreground-soft",
+                        )}
+                      >
                         {buildOutboundMessageStatusLabel(message.status)}
                       </span>
                     ) : null}
@@ -230,7 +248,13 @@ export function ConversationThread({
             <input
               type="text"
               value={draft}
-              onChange={(event) => setDraft(event.target.value)}
+              onChange={(event) => {
+                setDraft(event.target.value);
+
+                if (error) {
+                  setError(null);
+                }
+              }}
               placeholder="Escribe un mensaje para este contacto"
               className="h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
               disabled={isSubmitting}

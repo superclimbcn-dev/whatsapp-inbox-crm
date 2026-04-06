@@ -34,6 +34,21 @@ function buildStatusLabel(status: InboxConversation["status"]): string {
   }
 }
 
+function buildControlToneClass(
+  controlState: InboxConversation["controlState"],
+): string {
+  switch (controlState) {
+    case "mine":
+      return "text-success";
+    case "other":
+      return "text-warning";
+    case "free":
+      return "text-foreground-soft";
+    default:
+      return "text-foreground-soft";
+  }
+}
+
 export function ConversationList({
   conversations,
   selectedConversationId,
@@ -84,6 +99,14 @@ export function ConversationList({
             </div>
             <p className="mt-3 line-clamp-2 text-xs leading-6 text-foreground-muted/76">
               {conversation.preview}
+            </p>
+            <p
+              className={cn(
+                "mt-2 text-[11px] uppercase tracking-[0.08em]",
+                buildControlToneClass(conversation.controlState),
+              )}
+            >
+              {conversation.controlLabel}
             </p>
           </Link>
         );
