@@ -4,9 +4,9 @@ import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import {
   isWhatsappWebhookPayload,
   parseWhatsappWebhookPayload,
+  type WhatsappWebhookPayload,
 } from "@/adapters/whatsapp/webhook-payload";
-import { applyMessageStatus } from "@/app/services/whatsapp/apply-message-status";
-import { normalizeInboundMessage } from "@/app/services/whatsapp/normalize-inbound-message";
+import { processWhatsappWebhookPayload } from "@/app/services/whatsapp/process-webhook-payload";
 import { readWhatsappWebhookEnv } from "@/lib/env";
 
 type ChannelLookup = {
@@ -22,59 +22,49 @@ type WaEventLookup = {
 
 export const dynamic = "force-dynamic";
 
-async function linkNormalizedEvent(
+async function linkProcessedEvent(
+  payload: WhatsappWebhookPayload,
   eventId: string,
   channel: ChannelLookup,
-  parsedPayload: ReturnType<typeof parseWhatsappWebhookPayload>,
 ): Promise<void> {
-  if (parsedPayload.eventType !== "message" || !parsedPayload.inboundMessage) {
-    return;
-  }
-
   const admin = createSupabaseAdminClient();
-  const normalizedMessage = await normalizeInboundMessage(
+  const processedPayload = await processWhatsappWebhookPayload(
+    payload,
     {
       accountId: channel.account_id,
       channelId: channel.id,
     },
-    parsedPayload.inboundMessage,
   );
 
-  if (!normalizedMessage) {
+  if (!processedPayload.conversationId && !processedPayload.messageId) {
     return;
   }
 
   await admin
     .from("wa_events")
     .update({
-      conversation_id: normalizedMessage.conversationId,
-      message_id: normalizedMessage.messageId,
+      conversation_id: processedPayload.conversationId,
+      message_id: processedPayload.messageId,
     })
     .eq("id", eventId);
 }
 
-async function linkStatusEvent(
+async function processDuplicateEvent(
+  payload: WhatsappWebhookPayload,
   eventId: string,
+  channel: ChannelLookup | null,
   parsedPayload: ReturnType<typeof parseWhatsappWebhookPayload>,
 ): Promise<void> {
-  if (parsedPayload.eventType !== "status" || !parsedPayload.statusUpdate) {
+  if (channel) {
+    await linkProcessedEvent(payload, eventId, channel);
     return;
   }
 
-  const appliedStatus = await applyMessageStatus(parsedPayload.statusUpdate);
-
-  if (!appliedStatus) {
+  if (parsedPayload.eventType !== "status") {
     return;
   }
 
-  const admin = createSupabaseAdminClient();
-  await admin
-    .from("wa_events")
-    .update({
-      conversation_id: appliedStatus.conversationId,
-      message_id: appliedStatus.messageId,
-    })
-    .eq("id", eventId);
+  await processWhatsappWebhookPayload(payload, null);
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -153,20 +143,8 @@ export async function POST(request: Request): Promise<Response> {
       .maybeSingle<WaEventLookup>();
 
     if (existingEvent) {
-      if (
-        channel &&
-        (existingEvent.message_id === null ||
-          existingEvent.conversation_id === null)
-      ) {
-        await linkNormalizedEvent(existingEvent.id, channel, parsedPayload);
-      }
-
-      if (
-        parsedPayload.eventType === "status" &&
-        (existingEvent.message_id === null ||
-          existingEvent.conversation_id === null)
-      ) {
-        await linkStatusEvent(existingEvent.id, parsedPayload);
+      if (existingEvent.message_id === null || existingEvent.conversation_id === null) {
+        await processDuplicateEvent(payload, existingEvent.id, channel, parsedPayload);
       }
 
       return NextResponse.json(
@@ -219,19 +197,17 @@ export async function POST(request: Request): Promise<Response> {
 
   if (
     insertedEvent &&
-    channel &&
-    parsedPayload.eventType === "message" &&
-    parsedPayload.inboundMessage
+    channel
   ) {
-    await linkNormalizedEvent(insertedEvent.id, channel, parsedPayload);
+    await linkProcessedEvent(payload, insertedEvent.id, channel);
   }
 
   if (
     insertedEvent &&
     parsedPayload.eventType === "status" &&
-    parsedPayload.statusUpdate
+    !channel
   ) {
-    await linkStatusEvent(insertedEvent.id, parsedPayload);
+    await processWhatsappWebhookPayload(payload, null);
   }
 
   return NextResponse.json(

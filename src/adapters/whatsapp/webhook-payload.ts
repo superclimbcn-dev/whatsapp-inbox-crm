@@ -4,7 +4,7 @@ type JsonPrimitive = boolean | null | number | string;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
-type WhatsappMessage = {
+export type WhatsappMessage = {
   from?: string;
   id?: string;
   text?: {
@@ -14,42 +14,42 @@ type WhatsappMessage = {
   type?: string;
 };
 
-type WhatsappContact = {
+export type WhatsappContact = {
   profile?: {
     name?: string;
   };
   wa_id?: string;
 };
 
-type WhatsappStatus = {
+export type WhatsappStatus = {
   id?: string;
   recipient_id?: string;
   status?: string;
   timestamp?: string;
 };
 
-type WhatsappMetadata = {
+export type WhatsappMetadata = {
   phone_number_id?: string;
 };
 
-type WhatsappValue = {
+export type WhatsappValue = {
   contacts?: WhatsappContact[];
   messages?: WhatsappMessage[];
   metadata?: WhatsappMetadata;
   statuses?: WhatsappStatus[];
 };
 
-type WhatsappChange = {
+export type WhatsappChange = {
   field?: string;
   value?: WhatsappValue;
 };
 
-type WhatsappEntry = {
+export type WhatsappEntry = {
   changes?: WhatsappChange[];
   id?: string;
 };
 
-type WhatsappWebhookPayload = JsonObject & {
+export type WhatsappWebhookPayload = JsonObject & {
   entry?: WhatsappEntry[];
   object?: string;
 };
@@ -153,6 +153,48 @@ function resolveStatusTimestamp(timestamp: string | undefined): string | null {
   return null;
 }
 
+export function parseInboundMessage(
+  message: WhatsappMessage,
+  contact?: WhatsappContact,
+): ParsedInboundMessage | null {
+  if (!message.id) {
+    return null;
+  }
+
+  return {
+    body: message.text?.body ?? null,
+    messageId: message.id,
+    payload: isJsonObject(message) ? message : {},
+    phone: contact?.wa_id ?? message.from ?? null,
+    profileName: contact?.profile?.name ?? null,
+    sentAt: message.timestamp ?? null,
+    type: inferMessageType(message.type),
+    waContactId: contact?.wa_id ?? null,
+  };
+}
+
+export function parseStatusUpdate(
+  status: WhatsappStatus,
+): ParsedWhatsappStatus | null {
+  if (!status.id) {
+    return null;
+  }
+
+  const resolvedStatus = inferStatusValue(status.status);
+  const statusTimestamp = resolveStatusTimestamp(status.timestamp);
+
+  if (!resolvedStatus) {
+    return null;
+  }
+
+  return {
+    deliveredAt: resolvedStatus === "delivered" ? statusTimestamp : null,
+    messageId: status.id,
+    readAt: resolvedStatus === "read" ? statusTimestamp : null,
+    status: resolvedStatus,
+  };
+}
+
 export function parseWhatsappWebhookPayload(
   payload: WhatsappWebhookPayload,
 ): ParsedWhatsappWebhook {
@@ -165,39 +207,21 @@ export function parseWhatsappWebhookPayload(
   const phoneNumberId = value?.metadata?.phone_number_id ?? null;
 
   if (firstStatus?.id) {
-    const resolvedStatus = inferStatusValue(firstStatus.status);
-    const statusTimestamp = resolveStatusTimestamp(firstStatus.timestamp);
+    const statusUpdate = parseStatusUpdate(firstStatus);
 
     return {
       eventType: "status",
       inboundMessage: null,
       phoneNumberId,
       providerEventId: `status:${firstStatus.id}:${firstStatus.status ?? "unknown"}:${firstStatus.timestamp ?? "0"}`,
-      statusUpdate: resolvedStatus
-        ? {
-            deliveredAt:
-              resolvedStatus === "delivered" ? statusTimestamp : null,
-            messageId: firstStatus.id,
-            readAt: resolvedStatus === "read" ? statusTimestamp : null,
-            status: resolvedStatus,
-          }
-        : null,
+      statusUpdate,
     };
   }
 
   if (firstMessage?.id) {
     return {
       eventType: "message",
-      inboundMessage: {
-        body: firstMessage.text?.body ?? null,
-        messageId: firstMessage.id,
-        payload: isJsonObject(firstMessage) ? firstMessage : {},
-        phone: firstContact?.wa_id ?? firstMessage.from ?? null,
-        profileName: firstContact?.profile?.name ?? null,
-        sentAt: firstMessage.timestamp ?? null,
-        type: inferMessageType(firstMessage.type),
-        waContactId: firstContact?.wa_id ?? null,
-      },
+      inboundMessage: parseInboundMessage(firstMessage, firstContact),
       phoneNumberId,
       providerEventId: `message:${firstMessage.id}`,
       statusUpdate: null,
