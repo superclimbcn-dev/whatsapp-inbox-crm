@@ -10,6 +10,29 @@ type ConversationThreadProps = {
   conversation: InboxSelection;
 };
 
+const QUICK_REPLIES = [
+  {
+    id: "photos",
+    label: "Pedir fotos",
+    text: "Para prepararte un presupuesto preciso, ¿me puedes enviar fotos del sofá, alfombra o superficie a tratar?",
+  },
+  {
+    id: "location",
+    label: "Pedir ubicación",
+    text: "¿Me compartes la zona o ubicación del servicio para revisar disponibilidad y presupuesto?",
+  },
+  {
+    id: "service",
+    label: "Tipo de servicio",
+    text: "¿Qué servicio necesitas exactamente: limpieza de sofá, impermeabilización o lavado de alfombra/tapete?",
+  },
+  {
+    id: "measurements",
+    label: "Medidas / cantidad",
+    text: "¿Me indicas cuántas piezas son y las medidas aproximadas para calcular mejor el presupuesto?",
+  },
+] as const;
+
 function formatMessageDate(value: string): string {
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
@@ -63,6 +86,22 @@ export function ConversationThread({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTakingControl, setIsTakingControl] = useState(false);
   const submitInFlightRef = useRef(false);
+
+  function applyQuickReply(nextText: string) {
+    setDraft((currentDraft) => {
+      const trimmedDraft = currentDraft.trim();
+
+      if (!trimmedDraft) {
+        return nextText;
+      }
+
+      return `${currentDraft.trimEnd()}\n\n${nextText}`;
+    });
+
+    if (error) {
+      setError(null);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -279,6 +318,25 @@ export function ConversationThread({
       >
         <label className="block">
           <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+            Atajos de presupuesto
+          </span>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {QUICK_REPLIES.map((quickReply) => (
+              <button
+                key={quickReply.id}
+                type="button"
+                onClick={() => applyQuickReply(quickReply.text)}
+                disabled={isSubmitting || isGeneratingDraft}
+                className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {quickReply.label}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        <label className="mt-5 block">
+          <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
             Respuesta manual
           </span>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -300,7 +358,7 @@ export function ConversationThread({
               type="button"
               onClick={handleGenerateDraft}
               disabled={isGeneratingDraft || isSubmitting}
-              className="h-12 rounded-2xl border border-border bg-white/[0.03] px-5 text-sm font-semibold text-foreground transition hover:border-accent/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-12 rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-5 text-sm font-semibold text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isGeneratingDraft ? "Generando..." : "Generar borrador"}
             </button>
