@@ -7,6 +7,8 @@ type PublicEnv = {
 };
 
 type ServerEnv = PublicEnv & {
+  OPENAI_API_KEY: string;
+  OPENAI_MODEL?: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   WHATSAPP_ACCESS_TOKEN: string;
   WHATSAPP_WEBHOOK_VERIFY_TOKEN: string;
@@ -77,10 +79,24 @@ export function readWhatsappSendEnv(
   };
 }
 
+export function readOpenAIEnv(
+  source: EnvSource = process.env,
+): {
+  OPENAI_API_KEY: string;
+  OPENAI_MODEL: string;
+} {
+  return {
+    OPENAI_API_KEY: readRequired(source, "OPENAI_API_KEY"),
+    OPENAI_MODEL: source.OPENAI_MODEL?.trim() || "gpt-5.4-mini",
+  };
+}
+
 export function readServerEnv(source: EnvSource = process.env): ServerEnv {
   return {
     ...readPublicEnv(source),
     ...readSupabaseEnv(source),
+    OPENAI_API_KEY: readRequired(source, "OPENAI_API_KEY"),
+    OPENAI_MODEL: source.OPENAI_MODEL?.trim() || "gpt-5.4-mini",
     WHATSAPP_ACCESS_TOKEN: readRequired(source, "WHATSAPP_ACCESS_TOKEN"),
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: readRequired(
       source,

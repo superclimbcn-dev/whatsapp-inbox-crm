@@ -59,6 +59,7 @@ export function ConversationThread({
   const router = useRouter();
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTakingControl, setIsTakingControl] = useState(false);
   const submitInFlightRef = useRef(false);
@@ -135,6 +136,42 @@ export function ConversationThread({
 
     setIsTakingControl(false);
     router.refresh();
+  }
+
+  async function handleGenerateDraft() {
+    if (isGeneratingDraft) {
+      return;
+    }
+
+    setError(null);
+    setIsGeneratingDraft(true);
+
+    try {
+      const response = await fetch("/api/ai/reply-draft", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: conversation.conversationId,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { draft?: string; error?: string }
+        | null;
+
+      if (!response.ok || typeof result?.draft !== "string") {
+        setError(result?.error ?? "No pudimos generar el borrador.");
+        return;
+      }
+
+      setDraft(result.draft);
+    } catch {
+      setError("No pudimos generar el borrador.");
+    } finally {
+      setIsGeneratingDraft(false);
+    }
   }
 
   return (
@@ -257,11 +294,19 @@ export function ConversationThread({
               }}
               placeholder="Escribe un mensaje para este contacto"
               className="h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isGeneratingDraft}
             />
             <button
+              type="button"
+              onClick={handleGenerateDraft}
+              disabled={isGeneratingDraft || isSubmitting}
+              className="h-12 rounded-2xl border border-border bg-white/[0.03] px-5 text-sm font-semibold text-foreground transition hover:border-accent/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isGeneratingDraft ? "Generando..." : "Generar borrador"}
+            </button>
+            <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isGeneratingDraft}
               className="h-12 rounded-2xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-[#6170ff] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? "Enviando..." : "Enviar"}
