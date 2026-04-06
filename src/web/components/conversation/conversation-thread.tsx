@@ -1,10 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import type { InboxSelection } from "@/app/services/inbox/get-inbox-data";
+import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
+import {
+  buildQuickReplyStageLabel,
+  QUICK_REPLY_STAGES,
+  type QuickReplyStage,
+} from "@/core/settings/quick-replies";
 import { cn } from "@/lib/utils";
 
 type ConversationThreadProps = {
@@ -42,7 +47,7 @@ function buildOutboundMessageStatusLabel(
     case "delivered":
       return "Entregado";
     case "read":
-      return "Leído";
+      return "Leido";
     case "failed":
       return "Fallido";
     case "queued":
@@ -105,7 +110,45 @@ export function ConversationThread({
   const [isSavingCrm, setIsSavingCrm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTakingControl, setIsTakingControl] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<QuickReplyStage | null>(
+    null,
+  );
   const submitInFlightRef = useRef(false);
+
+  const quickReplyGroups = useMemo(() => {
+    return QUICK_REPLY_STAGES.map((stage) => ({
+      replies: conversation.quickReplies.filter((reply) => reply.stage === stage),
+      stage,
+    })).filter((group) => group.replies.length > 0);
+  }, [conversation.quickReplies]);
+
+  const availableStages = useMemo(
+    () => quickReplyGroups.map((group) => group.stage),
+    [quickReplyGroups],
+  );
+
+  const selectedStageReplies = useMemo(() => {
+    if (!selectedStage) {
+      return [];
+    }
+
+    return (
+      quickReplyGroups.find((group) => group.stage === selectedStage)?.replies ?? []
+    );
+  }, [quickReplyGroups, selectedStage]);
+
+  useEffect(() => {
+    setSelectedStage((currentStage) => {
+      if (
+        currentStage &&
+        availableStages.includes(currentStage)
+      ) {
+        return currentStage;
+      }
+
+      return availableStages[0] ?? null;
+    });
+  }, [availableStages, conversation.conversationId]);
 
   function applyQuickReply(nextText: string) {
     setDraft((currentDraft) => {
@@ -226,7 +269,7 @@ export function ConversationThread({
       | null;
 
     if (!response.ok) {
-      setError(result?.error ?? "No pudimos tomar control de la conversación.");
+      setError(result?.error ?? "No pudimos tomar control de la conversacion.");
       setIsTakingControl(false);
       return;
     }
@@ -276,7 +319,7 @@ export function ConversationThread({
       <div className="flex flex-col gap-3 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-            Conversación activa
+            Conversacion activa
           </p>
           <h4 className="mt-3 text-2xl font-semibold text-foreground">
             {conversation.contactName}
@@ -320,7 +363,7 @@ export function ConversationThread({
       <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
         {conversation.messages.length === 0 ? (
           <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.76))] px-5 py-6 text-sm text-foreground-muted/82">
-            Esta conversación todavía no tiene mensajes visibles.
+            Esta conversacion todavia no tiene mensajes visibles.
           </div>
         ) : (
           conversation.messages.map((message) => {
@@ -425,31 +468,69 @@ export function ConversationThread({
                 maxLength={500}
                 rows={3}
                 disabled={isSavingCrm}
-                placeholder="Añade una nota operativa breve para esta conversación"
+                placeholder="Anade una nota operativa breve para esta conversacion"
                 className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
               />
             </label>
           </div>
         </div>
 
-        <label className="block">
-          <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-            Atajos de presupuesto
-          </span>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {conversation.quickReplies.map((quickReply) => (
-              <button
-                key={quickReply.id}
-                type="button"
-                onClick={() => applyQuickReply(quickReply.text)}
-                disabled={isSubmitting || isGeneratingDraft}
-                className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {quickReply.label}
-              </button>
-            ))}
+        <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">
+          <div className="flex flex-col gap-4">
+            <div>
+              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                Biblioteca guiada
+              </span>
+              <p className="mt-2 text-sm text-foreground-muted/82">
+                Elige una etapa y despues una respuesta activa para insertarla en el mensaje manual.
+              </p>
+            </div>
+
+            {availableStages.length > 0 ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {availableStages.map((stage) => {
+                    const isActive = stage === selectedStage;
+
+                    return (
+                      <button
+                        key={stage}
+                        type="button"
+                        onClick={() => setSelectedStage(stage)}
+                        disabled={isSubmitting || isGeneratingDraft}
+                        className={
+                          isActive
+                            ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                            : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
+                        }
+                      >
+                        {buildQuickReplyStageLabel(stage)}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {selectedStageReplies.map((quickReply) => (
+                    <button
+                      key={quickReply.id}
+                      type="button"
+                      onClick={() => applyQuickReply(quickReply.text)}
+                      disabled={isSubmitting || isGeneratingDraft}
+                      className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {quickReply.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="rounded-2xl border border-border bg-background-soft/70 px-4 py-3 text-sm text-foreground-muted/82">
+                No hay respuestas activas para este workspace todavia.
+              </p>
+            )}
           </div>
-        </label>
+        </div>
 
         <label className="mt-5 block">
           <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">

@@ -1,81 +1,155 @@
-export const QUICK_REPLY_IDS = [
-  "photos",
-  "location",
-  "service",
-  "measurements",
+export const QUICK_REPLY_STAGES = [
+  "saludo",
+  "fotos",
+  "ubicacion",
+  "servicio",
+  "medidas",
+  "presupuesto",
+  "cierre",
 ] as const;
 
-export type QuickReplyId = (typeof QUICK_REPLY_IDS)[number];
+export type QuickReplyStage = (typeof QUICK_REPLY_STAGES)[number];
 
 export type QuickReply = {
-  id: QuickReplyId;
+  id: string;
   isActive: boolean;
   label: string;
+  stage: QuickReplyStage;
   text: string;
 };
-
-type QuickReplyRecord = Record<QuickReplyId, QuickReply>;
 
 type QuickRepliesMetadataItem = {
   id?: unknown;
   is_active?: unknown;
   label?: unknown;
+  stage?: unknown;
   text?: unknown;
 };
 
-const QUICK_REPLY_DEFAULTS: QuickReplyRecord = {
-  location: {
-    id: "location",
-    isActive: true,
-    label: "Pedir ubicación",
-    text: "¿Me compartes la zona o ubicación del servicio para revisar disponibilidad y presupuesto?",
-  },
-  measurements: {
-    id: "measurements",
-    isActive: true,
-    label: "Medidas / cantidad",
-    text: "¿Me indicas cuántas piezas son y las medidas aproximadas para calcular mejor el presupuesto?",
-  },
-  photos: {
+const DEFAULT_QUICK_REPLIES = [
+  {
     id: "photos",
     isActive: true,
     label: "Pedir fotos",
-    text: "Para prepararte un presupuesto preciso, ¿me puedes enviar fotos del sofá, alfombra o superficie a tratar?",
+    stage: "fotos",
+    text: "Para prepararte un presupuesto preciso, me puedes enviar fotos del sofa, alfombra o superficie a tratar?",
   },
-  service: {
+  {
+    id: "location",
+    isActive: true,
+    label: "Pedir ubicacion",
+    stage: "ubicacion",
+    text: "Me compartes la zona o ubicacion del servicio para revisar disponibilidad y presupuesto?",
+  },
+  {
     id: "service",
     isActive: true,
     label: "Tipo de servicio",
-    text: "¿Qué servicio necesitas exactamente: limpieza de sofá, impermeabilización o lavado de alfombra/tapete?",
+    stage: "servicio",
+    text: "Que servicio necesitas exactamente: limpieza de sofa, impermeabilizacion o lavado de alfombra/tapete?",
   },
-};
+  {
+    id: "measurements",
+    isActive: true,
+    label: "Medidas / cantidad",
+    stage: "medidas",
+    text: "Me indicas cuantas piezas son y las medidas aproximadas para calcular mejor el presupuesto?",
+  },
+] satisfies QuickReply[];
 
-function isQuickReplyId(value: unknown): value is QuickReplyId {
-  return typeof value === "string" && QUICK_REPLY_IDS.includes(value as QuickReplyId);
-}
+const DEFAULT_QUICK_REPLIES_BY_ID = new Map(
+  DEFAULT_QUICK_REPLIES.map((reply) => [reply.id, reply]),
+);
 
-function toQuickReplyRecord(replies: QuickReply[]): QuickReplyRecord {
-  return replies.reduce<QuickReplyRecord>(
-    (record, reply) => {
-      record[reply.id] = reply;
-      return record;
-    },
-    { ...QUICK_REPLY_DEFAULTS },
+function isQuickReplyStage(value: unknown): value is QuickReplyStage {
+  return (
+    typeof value === "string" &&
+    QUICK_REPLY_STAGES.includes(value as QuickReplyStage)
   );
 }
 
+function buildFallbackLabel(stage: QuickReplyStage, id: string): string {
+  const defaultReply = DEFAULT_QUICK_REPLIES_BY_ID.get(id);
+
+  if (defaultReply) {
+    return defaultReply.label;
+  }
+
+  switch (stage) {
+    case "saludo":
+      return "Saludo inicial";
+    case "fotos":
+      return "Solicitud de fotos";
+    case "ubicacion":
+      return "Solicitud de ubicacion";
+    case "servicio":
+      return "Tipo de servicio";
+    case "medidas":
+      return "Medidas / cantidad";
+    case "presupuesto":
+      return "Presupuesto";
+    case "cierre":
+      return "Cierre";
+  }
+}
+
+function resolveStage(
+  candidateStage: unknown,
+  quickReplyId: string,
+): QuickReplyStage | null {
+  if (isQuickReplyStage(candidateStage)) {
+    return candidateStage;
+  }
+
+  return DEFAULT_QUICK_REPLIES_BY_ID.get(quickReplyId)?.stage ?? null;
+}
+
+function buildFallbackText(quickReplyId: string): string {
+  return DEFAULT_QUICK_REPLIES_BY_ID.get(quickReplyId)?.text ?? "";
+}
+
+export function buildQuickReplyStageLabel(stage: QuickReplyStage): string {
+  switch (stage) {
+    case "saludo":
+      return "Saludo";
+    case "fotos":
+      return "Fotos";
+    case "ubicacion":
+      return "Ubicacion";
+    case "servicio":
+      return "Servicio";
+    case "medidas":
+      return "Medidas";
+    case "presupuesto":
+      return "Presupuesto";
+    case "cierre":
+      return "Cierre";
+  }
+}
+
 export function getDefaultQuickReplies(): QuickReply[] {
-  return QUICK_REPLY_IDS.map((id) => ({ ...QUICK_REPLY_DEFAULTS[id] }));
+  return DEFAULT_QUICK_REPLIES.map((reply) => ({ ...reply }));
+}
+
+export function createEmptyQuickReply(stage: QuickReplyStage = "saludo"): QuickReply {
+  return {
+    id: `custom_${crypto.randomUUID()}`,
+    isActive: true,
+    label: "",
+    stage,
+    text: "",
+  };
 }
 
 export function resolveQuickReplies(value: unknown): QuickReply[] {
-  const defaults = getDefaultQuickReplies();
+  const defaultReplies = getDefaultQuickReplies();
 
   if (!Array.isArray(value)) {
-    return defaults;
+    return defaultReplies;
   }
 
-  const merged = toQuickReplyRecord(defaults);
+  const repliesById = new Map(defaultReplies.map((reply) => [reply.id, reply]));
+  const extraReplies: QuickReply[] = [];
 
   for (const item of value) {
     if (typeof item !== "object" || item === null) {
@@ -83,61 +157,95 @@ export function resolveQuickReplies(value: unknown): QuickReply[] {
     }
 
     const candidate = item as QuickRepliesMetadataItem;
+    const id = typeof candidate.id === "string" ? candidate.id.trim() : "";
 
-    if (!isQuickReplyId(candidate.id)) {
+    if (!id) {
       continue;
     }
 
-    const fallback = QUICK_REPLY_DEFAULTS[candidate.id];
+    const stage = resolveStage(candidate.stage, id);
+
+    if (!stage) {
+      continue;
+    }
+
+    const defaultReply = repliesById.get(id);
     const label =
       typeof candidate.label === "string" && candidate.label.trim()
         ? candidate.label.trim()
-        : fallback.label;
+        : buildFallbackLabel(stage, id);
     const text =
       typeof candidate.text === "string" && candidate.text.trim()
         ? candidate.text.trim()
-        : fallback.text;
-    const isActive =
-      typeof candidate.is_active === "boolean"
-        ? candidate.is_active
-        : fallback.isActive;
+        : buildFallbackText(id);
 
-    merged[candidate.id] = {
-      id: candidate.id,
-      isActive,
+    if (!text) {
+      continue;
+    }
+
+    const normalizedReply: QuickReply = {
+      id,
+      isActive:
+        typeof candidate.is_active === "boolean"
+          ? candidate.is_active
+          : defaultReply?.isActive ?? true,
       label,
+      stage,
       text,
     };
+
+    if (defaultReply) {
+      repliesById.set(id, normalizedReply);
+      continue;
+    }
+
+    const existingExtraIndex = extraReplies.findIndex((reply) => reply.id === id);
+
+    if (existingExtraIndex >= 0) {
+      extraReplies[existingExtraIndex] = normalizedReply;
+    } else {
+      extraReplies.push(normalizedReply);
+    }
   }
 
-  return QUICK_REPLY_IDS.map((id) => merged[id]);
+  return [
+    ...defaultReplies.map((reply) => repliesById.get(reply.id) ?? reply),
+    ...extraReplies,
+  ];
 }
 
 export function sanitizeQuickReplies(
-  replies: ReadonlyArray<{
-    id: QuickReplyId;
-    isActive: boolean;
-    label: string;
-    text: string;
-  }>,
+  replies: ReadonlyArray<QuickReply>,
 ): QuickReply[] {
-  const merged = toQuickReplyRecord(getDefaultQuickReplies());
+  const sanitizedReplies: QuickReply[] = [];
+  const seenIds = new Set<string>();
 
   for (const reply of replies) {
-    const fallback = QUICK_REPLY_DEFAULTS[reply.id];
+    const id = reply.id.trim();
+
+    if (!id || seenIds.has(id)) {
+      continue;
+    }
+
+    if (!isQuickReplyStage(reply.stage)) {
+      throw new Error("La etapa de la respuesta rapida no es valida.");
+    }
+
     const text = reply.text.trim();
 
     if (!text) {
-      throw new Error("Cada respuesta rápida debe tener un texto válido.");
+      throw new Error("Cada respuesta rapida debe tener un texto valido.");
     }
 
-    merged[reply.id] = {
-      id: reply.id,
+    seenIds.add(id);
+    sanitizedReplies.push({
+      id,
       isActive: reply.isActive,
-      label: reply.label.trim() || fallback.label,
+      label: reply.label.trim() || buildFallbackLabel(reply.stage, id),
+      stage: reply.stage,
       text,
-    };
+    });
   }
 
-  return QUICK_REPLY_IDS.map((id) => merged[id]);
+  return sanitizedReplies;
 }

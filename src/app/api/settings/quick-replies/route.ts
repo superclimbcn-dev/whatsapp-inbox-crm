@@ -1,62 +1,87 @@
 import { NextResponse } from "next/server";
 
-import {
-  QUICK_REPLY_IDS,
-  type QuickReply,
-} from "@/core/settings/quick-replies";
 import { updateQuickReplies } from "@/app/services/settings/update-quick-replies";
+import { type QuickReply, type QuickReplyStage } from "@/core/settings/quick-replies";
 
-function buildRedirectUrl(request: Request): URL {
-  return new URL("/settings", request.url);
+type QuickRepliesRequestBody = {
+  quickReplies?: Array<{
+    id?: unknown;
+    isActive?: unknown;
+    label?: unknown;
+    stage?: unknown;
+    text?: unknown;
+  }>;
+};
+
+function isQuickReplyStage(value: unknown): value is QuickReplyStage {
+  return (
+    value === "saludo" ||
+    value === "fotos" ||
+    value === "ubicacion" ||
+    value === "servicio" ||
+    value === "medidas" ||
+    value === "presupuesto" ||
+    value === "cierre"
+  );
+}
+
+function parseQuickReplies(body: QuickRepliesRequestBody): QuickReply[] {
+  if (!Array.isArray(body.quickReplies)) {
+    throw new Error("No pudimos leer las respuestas rapidas enviadas.");
+  }
+
+  return body.quickReplies.map((reply) => {
+    if (!reply || typeof reply !== "object") {
+      throw new Error("No pudimos leer las respuestas rapidas enviadas.");
+    }
+
+    if (
+      typeof reply.id !== "string" ||
+      typeof reply.label !== "string" ||
+      typeof reply.text !== "string" ||
+      typeof reply.isActive !== "boolean" ||
+      !isQuickReplyStage(reply.stage)
+    ) {
+      throw new Error("La configuracion de respuestas rapidas no es valida.");
+    }
+
+    return {
+      id: reply.id,
+      isActive: reply.isActive,
+      label: reply.label,
+      stage: reply.stage,
+      text: reply.text,
+    };
+  });
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let formData: FormData;
+  let payload: QuickRepliesRequestBody;
 
   try {
-    formData = await request.formData();
+    payload = (await request.json()) as QuickRepliesRequestBody;
   } catch {
     return NextResponse.json(
-      {
-        error: "No pudimos leer la configuración enviada.",
-      },
-      {
-        status: 400,
-      },
+      { error: "No pudimos leer la configuracion enviada." },
+      { status: 400 },
     );
   }
 
-  const redirectUrl = buildRedirectUrl(request);
-
   try {
-    const quickReplies = QUICK_REPLY_IDS.map((id) => ({
-      id,
-      isActive: formData.get(`active_${id}`) === "on",
-      label:
-        typeof formData.get(`label_${id}`) === "string"
-          ? (formData.get(`label_${id}`) as string)
-          : "",
-      text:
-        typeof formData.get(`text_${id}`) === "string"
-          ? (formData.get(`text_${id}`) as string)
-          : "",
-    })) satisfies QuickReply[];
-
     await updateQuickReplies({
-      quickReplies,
+      quickReplies: parseQuickReplies(payload),
     });
 
-    redirectUrl.searchParams.set("quick_replies_saved", "1");
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "No pudimos guardar las respuestas rápidas.";
-
-    redirectUrl.searchParams.set("quick_replies_error", message);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "No pudimos guardar las respuestas rapidas.",
+      },
+      { status: 400 },
+    );
   }
-
-  return NextResponse.redirect(redirectUrl, {
-    status: 303,
-  });
 }

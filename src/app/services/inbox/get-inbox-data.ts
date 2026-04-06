@@ -141,7 +141,7 @@ function matchesOwnerFilter(
 
 function buildMessagePreview(message: MessagePreviewRow | undefined): string {
   if (!message) {
-    return "Sin actividad registrada todavía.";
+    return "Sin actividad registrada todavia.";
   }
 
   if (message.body) {
@@ -158,7 +158,7 @@ function buildMessagePreview(message: MessagePreviewRow | undefined): string {
     case "document":
       return "Documento recibido";
     case "interactive":
-      return "Interacción recibida";
+      return "Interaccion recibida";
     case "system":
       return "Evento del sistema";
     default:
@@ -259,7 +259,7 @@ export async function getInboxData(
     .maybeSingle<AccountRow>();
 
   if (accountError || !account) {
-    throw new Error("No pudimos cargar la configuración del inbox.");
+    throw new Error("No pudimos cargar la configuracion del inbox.");
   }
 
   const { data: conversationRows, error: conversationsError } = await admin
@@ -374,7 +374,7 @@ export async function getInboxData(
           latestMessage?.created_at ??
           null,
         ownerUserId: conversation.assigned_user_id,
-        phone: contact?.phone_e164 ?? "Sin número disponible",
+        phone: contact?.phone_e164 ?? "Sin numero disponible",
         preview: buildMessagePreview(latestMessage),
         status: conversation.status,
       } satisfies InboxConversation;
@@ -410,8 +410,12 @@ export async function getInboxData(
     .returns<MessageRow[]>();
 
   if (selectedMessagesError || !selectedMessages) {
-    throw new Error("No pudimos cargar los mensajes de la conversación.");
+    throw new Error("No pudimos cargar los mensajes de la conversacion.");
   }
+
+  const quickReplies = resolveQuickReplies(account.metadata?.quick_replies).filter(
+    (reply) => reply.isActive,
+  );
 
   return {
     conversations,
@@ -437,9 +441,7 @@ export async function getInboxData(
         type: message.type,
       })),
       phone: selectedConversation.phone,
-      quickReplies: resolveQuickReplies(account.metadata?.quick_replies).filter(
-        (reply) => reply.isActive,
-      ),
+      quickReplies,
       status: selectedConversation.status,
     },
     totalConversations: conversations.length,

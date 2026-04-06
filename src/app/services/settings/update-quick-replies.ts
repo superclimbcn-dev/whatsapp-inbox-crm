@@ -3,11 +3,7 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
-import {
-  QUICK_REPLY_IDS,
-  sanitizeQuickReplies,
-  type QuickReply,
-} from "@/core/settings/quick-replies";
+import { sanitizeQuickReplies, type QuickReply } from "@/core/settings/quick-replies";
 
 type AccountMetadata = {
   quick_replies?: unknown;
@@ -26,17 +22,13 @@ export type UpdateQuickRepliesInput = {
 export async function updateQuickReplies({
   quickReplies,
 }: UpdateQuickRepliesInput): Promise<void> {
-  if (quickReplies.length !== QUICK_REPLY_IDS.length) {
-    throw new Error("La configuración de respuestas rápidas no es válida.");
-  }
-
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Tu sesión ya no es válida. Vuelve a iniciar sesión.");
+    throw new Error("Tu sesion ya no es valida. Vuelve a iniciar sesion.");
   }
 
   const internalUser = await ensureUserContext(user);
@@ -48,7 +40,7 @@ export async function updateQuickReplies({
     .maybeSingle<AccountRow>();
 
   if (accountError || !account) {
-    throw new Error("No pudimos cargar la configuración del workspace.");
+    throw new Error("No pudimos cargar la configuracion del workspace.");
   }
 
   const sanitizedQuickReplies = sanitizeQuickReplies(quickReplies);
@@ -59,6 +51,7 @@ export async function updateQuickReplies({
       id: reply.id,
       is_active: reply.isActive,
       label: reply.label,
+      stage: reply.stage,
       text: reply.text,
     })),
   };
@@ -71,6 +64,6 @@ export async function updateQuickReplies({
     .eq("id", account.id);
 
   if (updateError) {
-    throw new Error("No pudimos guardar las respuestas rápidas.");
+    throw new Error("No pudimos guardar las respuestas rapidas.");
   }
 }
