@@ -12,6 +12,7 @@ import {
   type QuickReplyStage,
 } from "@/core/settings/quick-replies";
 import { cn } from "@/lib/utils";
+import { QuickReplyPalette } from "./quick-reply-palette";
 
 type ConversationThreadProps = {
   conversation: InboxSelection;
@@ -80,6 +81,12 @@ export function ConversationThread({
   );
   const [hasManualStageOverride, setHasManualStageOverride] = useState(false);
   const submitInFlightRef = useRef(false);
+  const [showQuickReplyPalette, setShowQuickReplyPalette] = useState(false);
+  const [quickReplyPalettePosition, setQuickReplyPalettePosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const quickReplyGroups = useMemo(() => {
     return QUICK_REPLY_STAGES.map((stage) => ({
@@ -543,20 +550,61 @@ export function ConversationThread({
             Respuesta manual
           </span>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <input
-              type="text"
-              value={draft}
-              onChange={(event) => {
-                setDraft(event.target.value);
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={draft}
+                onChange={(event) => {
+                  const newValue = event.target.value;
+                  setDraft(newValue);
 
-                if (error) {
-                  setError(null);
-                }
-              }}
-              placeholder="Escribe un mensaje para este contacto"
-              className="h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-              disabled={isSubmitting || isGeneratingDraft}
-            />
+                  // Check if "/" was typed to trigger quick reply palette
+                  if (newValue.endsWith("/") && !isGeneratingDraft && !isSubmitting) {
+                    const rect = event.target.getBoundingClientRect();
+                    setQuickReplyPalettePosition({
+                      top: rect.top - 10,
+                      left: rect.left,
+                    });
+                    setShowQuickReplyPalette(true);
+                  } else if (!newValue.includes("/")) {
+                    setShowQuickReplyPalette(false);
+                  }
+
+                  if (error) {
+                    setError(null);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && showQuickReplyPalette) {
+                    setShowQuickReplyPalette(false);
+                    event.preventDefault();
+                  }
+                }}
+                placeholder="Escribe un mensaje para este contacto"
+                className="h-12 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
+                disabled={isSubmitting || isGeneratingDraft}
+              />
+              {showQuickReplyPalette && (
+                <QuickReplyPalette
+                  quickReplies={conversation.quickReplies}
+                  onSelect={(reply) => {
+                    // Remove trailing "/" and insert the reply text
+                    const textWithoutSlash = draft.endsWith("/")
+                      ? draft.slice(0, -1)
+                      : draft;
+                    setDraft(`${textWithoutSlash}${reply.text}`);
+                    setShowQuickReplyPalette(false);
+                    inputRef.current?.focus();
+                  }}
+                  onClose={() => {
+                    setShowQuickReplyPalette(false);
+                    inputRef.current?.focus();
+                  }}
+                  anchorPosition={quickReplyPalettePosition ?? undefined}
+                />
+              )}
+            </div>
             <button
               type="button"
               onClick={handleGenerateDraft}
