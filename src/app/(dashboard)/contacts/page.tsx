@@ -127,64 +127,59 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <form action="/contacts" method="get" className="min-w-0">
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Buscar contacto
-              </span>
-              <div className="mt-3 flex flex-col gap-3 lg:flex-row">
-                <input
-                  type="search"
-                  name="q"
-                  defaultValue={contactsData.searchTerm}
-                  placeholder="Buscar por nombre o telefono"
-                  className="h-12 min-w-0 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-                />
-                <input
-                  type="hidden"
-                  name="conversation"
-                  value={
-                    contactsData.conversationFilter === "all"
-                      ? ""
-                      : contactsData.conversationFilter
-                  }
-                />
-                <button
-                  type="submit"
-                  className="h-12 rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
-                >
-                  Buscar
-                </button>
-              </div>
-            </label>
-          </form>
+        <div className="mt-5 space-y-4">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <form action="/contacts" method="get" className="min-w-0">
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Buscar contacto
+                </span>
+                <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={contactsData.searchTerm}
+                    placeholder="Buscar por nombre o telefono"
+                    className="h-12 min-w-0 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
+                  />
+                  <input
+                    type="hidden"
+                    name="conversation"
+                    value={
+                      contactsData.conversationFilter === "all"
+                        ? ""
+                        : contactsData.conversationFilter
+                    }
+                  />
+                  <button
+                    type="submit"
+                    className="h-12 rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
+                  >
+                    Buscar
+                  </button>
+                </div>
+              </label>
+            </form>
 
-          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(14,23,38,0.92),rgba(11,18,31,0.9))] p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Importacion manual
-                </p>
-                <p className="mt-2 text-sm text-foreground/92">
-                  CSV con cabecera{" "}
-                  <span className="font-medium text-foreground">name,phone</span>{" "}
-                  o{" "}
-                  <span className="font-medium text-foreground">
-                    nombre,telefono
-                  </span>
-                  .
-                </p>
-                <p className="mt-1 text-xs leading-6 text-foreground-soft">
-                  Formato minimo, hasta 500 filas y solo contactos con telefono valido.
-                </p>
-              </div>
+            <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(14,23,38,0.92),rgba(11,18,31,0.9))] px-4 py-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                Importacion manual
+              </p>
+              <p className="mt-2 text-sm text-foreground/92">
+                CSV con cabecera{" "}
+                <span className="font-medium text-foreground">name,phone</span>{" "}
+                o{" "}
+                <span className="font-medium text-foreground">nombre,telefono</span>.
+              </p>
+              <p className="mt-1 text-xs leading-6 text-foreground-soft">
+                Formato minimo, hasta 500 filas y solo contactos con telefono valido.
+              </p>
 
               <form
                 action="/api/contacts/import-csv"
                 method="post"
                 encType="multipart/form-data"
-                className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center"
+                className="mt-4 flex flex-col gap-3"
               >
                 <input type="hidden" name="q" value={contactsData.searchTerm} />
                 <input
@@ -196,7 +191,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   type="file"
                   name="file"
                   accept=".csv,text/csv"
-                  className="block h-12 min-w-0 flex-1 rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(46,62,109,0.96)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+                  className="block h-12 min-w-0 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(46,62,109,0.96)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
                 />
                 <button
                   type="submit"
@@ -206,66 +201,66 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 </button>
               </form>
             </div>
-
-            {importError ? (
-              <p className="mt-4 rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
-                {importError}
-              </p>
-            ) : importedCount !== null &&
-              duplicatedCount !== null &&
-              ignoredCount !== null ? (
-              <div className="mt-4 flex flex-wrap gap-3">
-                <StatusBadge tone="success">
-                  {`${importedCount} importados`}
-                </StatusBadge>
-                <StatusBadge tone="info">
-                  {`${duplicatedCount} duplicados`}
-                </StatusBadge>
-                <StatusBadge tone="base">
-                  {`${ignoredCount} ignorados`}
-                </StatusBadge>
-              </div>
-            ) : null}
           </div>
-        </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {(["all", "with_conversation", "without_conversation"] as const).map(
-            (filterOption) => {
-              const params = new URLSearchParams();
+          <div className="flex flex-wrap gap-2">
+            {(["all", "with_conversation", "without_conversation"] as const).map(
+              (filterOption) => {
+                const params = new URLSearchParams();
 
-              if (contactsData.searchTerm) {
-                params.set("q", contactsData.searchTerm);
-              }
+                if (contactsData.searchTerm) {
+                  params.set("q", contactsData.searchTerm);
+                }
 
-              if (filterOption !== "all") {
-                params.set("conversation", filterOption);
-              }
+                if (filterOption !== "all") {
+                  params.set("conversation", filterOption);
+                }
 
-              const href = params.toString()
-                ? `/contacts?${params.toString()}`
-                : "/contacts";
-              const isActive = contactsData.conversationFilter === filterOption;
+                const href = params.toString()
+                  ? `/contacts?${params.toString()}`
+                  : "/contacts";
+                const isActive = contactsData.conversationFilter === filterOption;
 
-              return (
-                <a
-                  key={filterOption}
-                  href={href}
-                  className={
-                    isActive
-                      ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
-                      : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
-                  }
-                >
-                  {buildConversationFilterLabel(filterOption)}
-                </a>
-              );
-            },
-          )}
+                return (
+                  <a
+                    key={filterOption}
+                    href={href}
+                    className={
+                      isActive
+                        ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                        : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                    }
+                  >
+                    {buildConversationFilterLabel(filterOption)}
+                  </a>
+                );
+              },
+            )}
+          </div>
+
+          {importError ? (
+            <p className="rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
+              {importError}
+            </p>
+          ) : importedCount !== null &&
+            duplicatedCount !== null &&
+            ignoredCount !== null ? (
+            <div className="flex flex-wrap gap-3">
+              <StatusBadge tone="success">
+                {`${importedCount} importados`}
+              </StatusBadge>
+              <StatusBadge tone="info">
+                {`${duplicatedCount} duplicados`}
+              </StatusBadge>
+              <StatusBadge tone="base">
+                {`${ignoredCount} ignorados`}
+              </StatusBadge>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 divide-y divide-border xl:grid-cols-[320px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
+      <div className="grid min-h-0 flex-1 divide-y divide-border xl:grid-cols-[380px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
         <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,rgba(10,18,32,0.92),rgba(12,22,38,0.84))] p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -351,7 +346,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               </div>
 
               <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 xl:grid-cols-2">
                   <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4">
                     <p className="text-sm font-medium text-foreground/94">
                       Telefono
