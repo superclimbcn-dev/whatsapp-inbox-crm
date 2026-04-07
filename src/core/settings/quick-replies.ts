@@ -127,6 +127,23 @@ export function buildQuickReplyStageLabel(stage: QuickReplyStage): string {
   }
 }
 
+export function findNextQuickReplyStage(
+  currentStage: QuickReplyStage,
+  availableStages: ReadonlyArray<QuickReplyStage>,
+): QuickReplyStage | null {
+  const currentIndex = QUICK_REPLY_STAGES.indexOf(currentStage);
+
+  for (let index = currentIndex + 1; index < QUICK_REPLY_STAGES.length; index += 1) {
+    const candidateStage = QUICK_REPLY_STAGES[index];
+
+    if (availableStages.includes(candidateStage)) {
+      return candidateStage;
+    }
+  }
+
+  return null;
+}
+
 export function getDefaultQuickReplies(): QuickReply[] {
   return DEFAULT_QUICK_REPLIES.map((reply) => ({ ...reply }));
 }

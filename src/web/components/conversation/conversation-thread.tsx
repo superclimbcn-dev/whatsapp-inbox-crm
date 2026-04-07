@@ -7,6 +7,7 @@ import type { InboxSelection } from "@/app/services/inbox/get-inbox-data";
 import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import {
   buildQuickReplyStageLabel,
+  findNextQuickReplyStage,
   QUICK_REPLY_STAGES,
   type QuickReplyStage,
 } from "@/core/settings/quick-replies";
@@ -113,6 +114,7 @@ export function ConversationThread({
   const [selectedStage, setSelectedStage] = useState<QuickReplyStage | null>(
     null,
   );
+  const [hasManualStageOverride, setHasManualStageOverride] = useState(false);
   const submitInFlightRef = useRef(false);
 
   const quickReplyGroups = useMemo(() => {
@@ -138,17 +140,27 @@ export function ConversationThread({
   }, [quickReplyGroups, selectedStage]);
 
   useEffect(() => {
-    setSelectedStage((currentStage) => {
-      if (
-        currentStage &&
-        availableStages.includes(currentStage)
-      ) {
-        return currentStage;
-      }
+    setSelectedStage(
+      conversation.suggestedQuickReplyStage &&
+        availableStages.includes(conversation.suggestedQuickReplyStage)
+        ? conversation.suggestedQuickReplyStage
+        : (availableStages[0] ?? null),
+    );
+    setHasManualStageOverride(false);
+  }, [availableStages, conversation.conversationId, conversation.suggestedQuickReplyStage]);
 
-      return availableStages[0] ?? null;
-    });
-  }, [availableStages, conversation.conversationId]);
+  useEffect(() => {
+    if (selectedStage && availableStages.includes(selectedStage)) {
+      return;
+    }
+
+    setSelectedStage(
+      conversation.suggestedQuickReplyStage &&
+        availableStages.includes(conversation.suggestedQuickReplyStage)
+        ? conversation.suggestedQuickReplyStage
+        : (availableStages[0] ?? null),
+    );
+  }, [availableStages, conversation.suggestedQuickReplyStage, selectedStage]);
 
   function applyQuickReply(nextText: string) {
     setDraft((currentDraft) => {
@@ -164,6 +176,16 @@ export function ConversationThread({
     if (error) {
       setError(null);
     }
+
+    if (selectedStage) {
+      const nextStage = findNextQuickReplyStage(selectedStage, availableStages);
+
+      if (nextStage) {
+        setSelectedStage(nextStage);
+      }
+    }
+
+    setHasManualStageOverride(false);
   }
 
   async function handleSaveCrm() {
@@ -313,6 +335,8 @@ export function ConversationThread({
       setIsGeneratingDraft(false);
     }
   }
+
+  const suggestedStage = conversation.suggestedQuickReplyStage;
 
   return (
     <div className="flex h-full flex-col rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
@@ -491,12 +515,16 @@ export function ConversationThread({
                 <div className="flex flex-wrap gap-2">
                   {availableStages.map((stage) => {
                     const isActive = stage === selectedStage;
+                    const isSuggested = stage === suggestedStage;
 
                     return (
                       <button
                         key={stage}
                         type="button"
-                        onClick={() => setSelectedStage(stage)}
+                        onClick={() => {
+                          setSelectedStage(stage);
+                          setHasManualStageOverride(true);
+                        }}
                         disabled={isSubmitting || isGeneratingDraft}
                         className={
                           isActive
@@ -504,11 +532,22 @@ export function ConversationThread({
                             : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
                         }
                       >
-                        {buildQuickReplyStageLabel(stage)}
+                        <span>{buildQuickReplyStageLabel(stage)}</span>
+                        {isSuggested ? (
+                          <span className="ml-2 text-[10px] uppercase tracking-[0.12em] text-foreground-soft/80">
+                            Sugerida
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
                 </div>
+
+                {suggestedStage && !hasManualStageOverride ? (
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-foreground-muted/68">
+                    Sugerencia activa: {buildQuickReplyStageLabel(suggestedStage)}
+                  </p>
+                ) : null}
 
                 <div className="flex flex-wrap gap-2">
                   {selectedStageReplies.map((quickReply) => (

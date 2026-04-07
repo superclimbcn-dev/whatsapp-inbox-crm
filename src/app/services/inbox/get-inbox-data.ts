@@ -5,7 +5,9 @@ import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
 import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import {
+  QUICK_REPLY_STAGES,
   resolveQuickReplies,
+  type QuickReplyStage,
   type QuickReply,
 } from "@/core/settings/quick-replies";
 
@@ -121,6 +123,7 @@ export type InboxSelection = {
   ownerUserId: string | null;
   phone: string;
   quickReplies: QuickReply[];
+  suggestedQuickReplyStage: QuickReplyStage | null;
   status: "closed" | "open" | "pending";
 };
 
@@ -228,6 +231,68 @@ function resolveCrmState(metadata: ConversationMetadata | null): CrmState {
 
 function resolveCrmInternalNote(metadata: ConversationMetadata | null): string {
   return metadata?.crm?.internal_note?.trim() || "";
+}
+
+function pickFirstAvailableStage(
+  candidates: ReadonlyArray<QuickReplyStage>,
+  availableStages: ReadonlyArray<QuickReplyStage>,
+): QuickReplyStage | null {
+  for (const stage of candidates) {
+    if (availableStages.includes(stage)) {
+      return stage;
+    }
+  }
+
+  return null;
+}
+
+function hasRecentOutboundMessage(messages: ReadonlyArray<MessageRow>): boolean {
+  return messages.some((message) => message.direction === "outbound");
+}
+
+function resolveSuggestedQuickReplyStage(input: {
+  availableStages: ReadonlyArray<QuickReplyStage>;
+  crmState: CrmState;
+  hasRecentOutbound: boolean;
+}): QuickReplyStage | null {
+  if (input.availableStages.length === 0) {
+    return null;
+  }
+
+  if (input.crmState === "cerrado" || input.crmState === "perdido") {
+    return input.availableStages.includes("cierre") ? "cierre" : null;
+  }
+
+  switch (input.crmState) {
+    case "nuevo":
+      if (!input.hasRecentOutbound && input.availableStages.includes("saludo")) {
+        return "saludo";
+      }
+
+      return (
+        pickFirstAvailableStage(
+          ["fotos", "ubicacion", "servicio", "medidas", "presupuesto", "cierre"],
+          input.availableStages,
+        ) ?? input.availableStages[0]
+      );
+    case "pendiente":
+      return (
+        pickFirstAvailableStage(
+          ["fotos", "ubicacion", "servicio", "medidas", "presupuesto", "cierre"],
+          input.availableStages,
+        ) ?? input.availableStages[0]
+      );
+    case "presupuesto_enviado":
+    case "agendado":
+      return (
+        pickFirstAvailableStage(
+          ["cierre", "presupuesto", "medidas", "servicio", "ubicacion", "fotos", "saludo"],
+          input.availableStages,
+        ) ?? input.availableStages[0]
+      );
+    default:
+      return input.availableStages[0];
+  }
 }
 
 export async function getInboxData(
@@ -416,6 +481,14 @@ export async function getInboxData(
   const quickReplies = resolveQuickReplies(account.metadata?.quick_replies).filter(
     (reply) => reply.isActive,
   );
+  const activeStages = QUICK_REPLY_STAGES.filter((stage) =>
+    quickReplies.some((reply) => reply.stage === stage),
+  );
+  const suggestedQuickReplyStage = resolveSuggestedQuickReplyStage({
+    availableStages: activeStages,
+    crmState: selectedConversation.crmState,
+    hasRecentOutbound: hasRecentOutboundMessage(selectedMessages),
+  });
 
   return {
     conversations,
@@ -442,6 +515,7 @@ export async function getInboxData(
       })),
       phone: selectedConversation.phone,
       quickReplies,
+      suggestedQuickReplyStage,
       status: selectedConversation.status,
     },
     totalConversations: conversations.length,
