@@ -91,6 +91,7 @@ export function ConversationThread({
     left: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<'crm' | 'notes' | 'ai'>('crm');
 
   const quickReplyGroups = useMemo(() => {
     return QUICK_REPLY_STAGES.map((stage) => ({
@@ -320,6 +321,36 @@ export function ConversationThread({
     router.refresh();
   }
 
+  async function handleArchiveConversation() {
+    setError(null);
+
+    try {
+      const response = await fetch("/api/conversations/archive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: conversation.conversationId,
+          archive: conversation.status !== "closed",
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        setError(result?.error ?? "No pudimos archivar la conversacion.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setError("No pudimos archivar la conversacion.");
+    }
+  }
+
   async function handleGenerateDraft() {
     if (isGeneratingDraft) {
       return;
@@ -389,18 +420,28 @@ export function ConversationThread({
               {buildStatusLabel(conversation.status)}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={handleTakeControl}
-            disabled={!conversation.isTakeControlAvailable || isTakingControl}
-            className="rounded-2xl border border-border bg-white/[0.03] px-4 py-2 text-xs font-medium uppercase tracking-[0.08em] text-foreground-muted transition hover:border-accent/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {conversation.controlState === "mine"
-              ? "Bajo mi control"
-              : isTakingControl
-                ? "Tomando control..."
-                : "Tomar control"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleArchiveConversation}
+              className="rounded-2xl border border-border bg-white/[0.03] px-3 py-2 text-xs font-medium uppercase tracking-[0.08em] text-foreground-muted transition hover:border-accent/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              title={conversation.status === "closed" ? "Reabrir conversacion" : "Archivar conversacion"}
+            >
+              {conversation.status === "closed" ? "Reabrir" : "Archivar"}
+            </button>
+            <button
+              type="button"
+              onClick={handleTakeControl}
+              disabled={!conversation.isTakeControlAvailable || isTakingControl}
+              className="rounded-2xl border border-border bg-white/[0.03] px-4 py-2 text-xs font-medium uppercase tracking-[0.08em] text-foreground-muted transition hover:border-accent/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {conversation.controlState === "mine"
+                ? "Bajo mi control"
+                : isTakingControl
+                  ? "Tomando control..."
+                  : "Tomar control"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -461,83 +502,164 @@ export function ConversationThread({
         onSubmit={handleSubmit}
         className="sticky bottom-0 mt-6 border-t border-border bg-[linear-gradient(180deg,rgba(12,20,34,0.18),rgba(12,20,34,0.94)_18%,rgba(12,20,34,0.98))] pt-5 backdrop-blur-sm"
       >
-        <div className="mb-5 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                    Contexto CRM
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-2 text-[11px] uppercase tracking-[0.08em]",
-                      buildCrmStateToneClass(crmState),
-                    )}
+        <div className="mb-5 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))]">
+          {/* Tab Bar */}
+          <div className="flex border-b border-border/60">
+            <button
+              type="button"
+              onClick={() => setActiveTab('crm')}
+              className={cn(
+                "flex-1 px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] transition",
+                activeTab === 'crm'
+                  ? 'text-foreground border-b-2 border-accent/60 bg-white/[0.02]'
+                  : 'text-foreground-muted/60 hover:text-foreground-muted',
+              )}
+            >
+              CRM
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('notes')}
+              className={cn(
+                "flex-1 px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] transition",
+                activeTab === 'notes'
+                  ? 'text-foreground border-b-2 border-accent/60 bg-white/[0.02]'
+                  : 'text-foreground-muted/60 hover:text-foreground-muted',
+              )}
+            >
+              NOTAS
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ai')}
+              className={cn(
+                "flex-1 px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] transition",
+                activeTab === 'ai'
+                  ? 'text-foreground border-b-2 border-accent/60 bg-white/[0.02]'
+                  : 'text-foreground-muted/60 hover:text-foreground-muted',
+              )}
+            >
+              IA
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="max-h-[360px] overflow-y-auto p-4">
+            {activeTab === 'crm' && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                      Estado actual
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1 text-[10px] uppercase tracking-[0.08em]",
+                        buildCrmStateToneClass(crmState),
+                      )}
+                    >
+                      {buildCrmStateLabel(crmState)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveCrm}
+                    disabled={isSavingCrm || isSubmitting || isGeneratingDraft}
+                    className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-3 py-1.5 text-[10px] font-medium text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {buildCrmStateLabel(crmState)}
+                    {isSavingCrm ? "Guardando..." : "Guardar"}
+                  </button>
+                </div>
+
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Estado del lead
+                  </span>
+                  <select
+                    value={crmState}
+                    onChange={(event) => setCrmState(event.target.value as CrmState)}
+                    disabled={isSavingCrm}
+                    className="mt-1.5 h-10 w-full rounded-2xl border border-border bg-background-soft px-3 text-xs text-foreground outline-none transition focus:border-accent/40"
+                  >
+                    {CRM_STATES.map((stateOption) => (
+                      <option key={stateOption} value={stateOption}>
+                        {buildCrmStateLabel(stateOption)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Nota interna
+                  </span>
+                  <textarea
+                    value={crmInternalNote}
+                    onChange={(event) => setCrmInternalNote(event.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    disabled={isSavingCrm}
+                    placeholder="Nota operativa breve..."
+                    className="mt-1.5 w-full rounded-2xl border border-border bg-background-soft px-3 py-2 text-xs text-foreground outline-none transition focus:border-accent/40"
+                  />
+                </label>
+              </div>
+            )}
+
+            {activeTab === 'notes' && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Notas Operativas
+                  </span>
+                  <p className="mt-1 text-[10px] text-foreground-muted/68">
+                    Notas internas del equipo (no se envian al cliente)
+                  </p>
+                </div>
+                <textarea
+                  value={internalNotes}
+                  onChange={(event) => handleInternalNotesChange(event.target.value)}
+                  rows={8}
+                  placeholder="Escribe notas operativas internas..."
+                  className="w-full rounded-2xl border border-border bg-background-soft px-3 py-2 text-xs text-foreground outline-none transition focus:border-accent/40"
+                />
+                <p className="text-[10px] text-foreground-muted/60">
+                  Guardado automatico al dejar de escribir
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'ai' && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Generador de Borrador
+                  </span>
+                  <p className="mt-1 text-[10px] text-foreground-muted/68">
+                    La IA analizara el contexto de la conversacion
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={handleSaveCrm}
-                  disabled={isSavingCrm || isSubmitting || isGeneratingDraft}
-                  className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
+                  onClick={handleGenerateDraft}
+                  disabled={isGeneratingDraft || isSubmitting}
+                  className="h-10 rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 text-xs font-semibold text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isSavingCrm ? "Guardando..." : "Guardar contexto"}
+                  {isGeneratingDraft ? "Generando..." : "Generar borrador con IA"}
                 </button>
+                {draft && (
+                  <div className="rounded-2xl border border-border bg-background-soft/50 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                      Borrador actual
+                    </p>
+                    <p className="mt-1 text-xs text-foreground/80 line-clamp-3">
+                      {draft}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <label className="block">
-                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Estado del lead
-                </span>
-                <select
-                  value={crmState}
-                  onChange={(event) => setCrmState(event.target.value as CrmState)}
-                  disabled={isSavingCrm}
-                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-                >
-                  {CRM_STATES.map((stateOption) => (
-                    <option key={stateOption} value={stateOption}>
-                      {buildCrmStateLabel(stateOption)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Nota interna
-                </span>
-                <textarea
-                  value={crmInternalNote}
-                  onChange={(event) => setCrmInternalNote(event.target.value)}
-                  maxLength={500}
-                  rows={3}
-                  disabled={isSavingCrm}
-                  placeholder="Anade una nota operativa breve para esta conversacion"
-                  className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
-                />
-              </label>
-
-              <div className="border-t border-border/60 pt-4">
-                <label className="block">
-                  <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                    Notas Operativas
-                  </span>
-                  <p className="mt-1 text-xs text-foreground-muted/68">
-                    Notas internas del equipo (no se envian al cliente)
-                  </p>
-                  <textarea
-                    value={internalNotes}
-                    onChange={(event) => handleInternalNotesChange(event.target.value)}
-                    rows={4}
-                    placeholder="Escribe notas operativas internas para esta conversacion..."
-                    className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
-                  />
-                </label>
-              </div>
-            </div>
+            )}
+          </div>
         </div>
 
         <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">

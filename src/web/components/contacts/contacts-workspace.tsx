@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import type {
@@ -130,6 +131,7 @@ export function ContactsWorkspace({
   searchTerm,
   selectedContactId,
 }: ContactsWorkspaceProps) {
+  const router = useRouter();
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [isPreparingMessage, setIsPreparingMessage] = useState(false);
   const [draft, setDraft] = useState("");
@@ -414,9 +416,26 @@ export function ContactsWorkspace({
                       <StatusBadge tone={buildCrmStateTone(contact.crmState)}>
                         {buildCrmStateLabel(contact.crmState)}
                       </StatusBadge>
-                      <StatusBadge tone={hasConversation ? "info" : "base"}>
-                        {hasConversation ? "Con conv." : "Sin conv."}
-                      </StatusBadge>
+                      {hasConversation ? (
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/inbox?id=${contact.conversationId}`)}
+                          className="rounded-2xl border border-[rgba(88,108,176,0.3)] bg-[linear-gradient(180deg,rgba(34,49,77,0.92),rgba(23,35,56,0.9))] px-3 py-1 text-xs font-medium text-foreground transition hover:border-[rgba(104,126,188,0.42)] hover:bg-[linear-gradient(180deg,rgba(40,57,89,0.94),rgba(27,41,65,0.92))]"
+                        >
+                          Ir a conversación
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // TODO: Implementar criação de conversa
+                            console.log("Criar conversa para:", contact.phone);
+                          }}
+                          className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-3 py-1 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                        >
+                          Crear conversación
+                        </button>
+                      )}
                     </div>
                   </Link>
                 </div>
