@@ -80,6 +80,24 @@ function getContactInitials(value: string): string {
   return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
 }
 
+const avatarPalette = [
+  "bg-[linear-gradient(180deg,rgba(24,104,132,0.96),rgba(16,70,97,0.98))] text-cyan-100 shadow-[0_16px_34px_rgba(8,56,79,0.34)] ring-1 ring-cyan-300/16",
+  "bg-[linear-gradient(180deg,rgba(77,52,156,0.96),rgba(50,33,104,0.98))] text-violet-100 shadow-[0_16px_34px_rgba(40,28,92,0.34)] ring-1 ring-violet-300/16",
+  "bg-[linear-gradient(180deg,rgba(21,117,91,0.96),rgba(15,76,60,0.98))] text-emerald-100 shadow-[0_16px_34px_rgba(13,64,52,0.34)] ring-1 ring-emerald-300/16",
+  "bg-[linear-gradient(180deg,rgba(133,98,24,0.96),rgba(87,63,16,0.98))] text-amber-100 shadow-[0_16px_34px_rgba(78,55,13,0.34)] ring-1 ring-amber-300/16",
+  "bg-[linear-gradient(180deg,rgba(136,44,92,0.96),rgba(87,27,58,0.98))] text-fuchsia-100 shadow-[0_16px_34px_rgba(79,21,52,0.34)] ring-1 ring-fuchsia-300/16",
+  "bg-[linear-gradient(180deg,rgba(43,82,156,0.96),rgba(28,54,102,0.98))] text-sky-100 shadow-[0_16px_34px_rgba(18,44,88,0.34)] ring-1 ring-sky-300/16",
+] as const;
+
+function buildAvatarTone(value: string): string {
+  const seed = Array.from(value).reduce(
+    (accumulator, character) => accumulator + character.charCodeAt(0),
+    0,
+  );
+
+  return avatarPalette[seed % avatarPalette.length];
+}
+
 export default async function ContactsPage(props: PageProps<"/contacts">) {
   const searchParams = await props.searchParams;
   const selectedContactId =
@@ -107,8 +125,8 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
   const selectedContact = contactsData.selectedContact;
 
   return (
-    <PanelSurface className="flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(18,28,45,0.98),rgba(10,18,31,0.96))]">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 py-5 xl:px-6 xl:py-6">
+    <PanelSurface className="flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(70,110,204,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(27,143,111,0.14),transparent_26%),linear-gradient(180deg,rgba(18,28,45,0.98),rgba(10,18,31,0.96))]">
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 xl:px-6 xl:py-6">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
@@ -132,9 +150,9 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
           </div>
         </div>
 
-        <div className="mt-5 grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_360px]">
-          <div className="flex min-h-0 flex-col gap-5">
-            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_22px_56px_rgba(2,6,23,0.18)]">
+        <div className="mt-5 grid min-h-fit flex-1 items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_380px]">
+          <div className="flex min-h-[760px] flex-col gap-5">
+            <section className="rounded-[30px] border border-[rgba(118,138,195,0.16)] bg-[radial-gradient(circle_at_top_left,rgba(82,108,185,0.12),transparent_34%),linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_24px_64px_rgba(2,6,23,0.22)]">
               <div className="flex flex-col gap-4">
                 <form action="/contacts" method="get" className="max-w-3xl">
                   <label className="block">
@@ -160,7 +178,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                       />
                       <button
                         type="submit"
-                        className="h-11 shrink-0 rounded-2xl border border-[rgba(82,101,155,0.34)] bg-[linear-gradient(180deg,rgba(24,36,58,0.98),rgba(18,28,45,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(98,119,180,0.42)] hover:bg-[linear-gradient(180deg,rgba(31,45,72,0.98),rgba(22,33,53,0.96))]"
+                        className="h-11 shrink-0 rounded-2xl border border-emerald-300/18 bg-[linear-gradient(180deg,rgba(20,118,92,0.98),rgba(14,88,68,0.96))] px-5 text-sm font-semibold text-emerald-50 shadow-[0_16px_34px_rgba(9,58,46,0.28)] transition duration-200 hover:-translate-y-[1px] hover:border-emerald-200/26 hover:bg-[linear-gradient(180deg,rgba(24,132,103,0.98),rgba(16,96,75,0.96))] hover:shadow-[0_22px_40px_rgba(8,49,40,0.34)]"
                       >
                         Buscar
                       </button>
@@ -194,8 +212,8 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                         href={href}
                         className={
                           isActive
-                            ? "rounded-2xl border border-[rgba(86,107,167,0.42)] bg-[linear-gradient(180deg,rgba(41,56,89,0.98),rgba(26,39,63,0.96))] px-4 py-2 text-xs font-medium text-foreground shadow-[0_12px_26px_rgba(7,12,24,0.18)]"
-                            : "rounded-2xl border border-[rgba(96,114,170,0.2)] bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(96,114,170,0.34)] hover:text-foreground"
+                            ? "rounded-2xl border border-[rgba(86,107,167,0.42)] bg-[linear-gradient(180deg,rgba(41,56,89,0.98),rgba(26,39,63,0.96))] px-4 py-2 text-xs font-medium text-foreground shadow-[0_14px_28px_rgba(7,12,24,0.2)]"
+                            : "rounded-2xl border border-[rgba(96,114,170,0.2)] bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-2 text-xs font-medium text-foreground-soft transition duration-200 hover:-translate-y-[1px] hover:border-[rgba(96,114,170,0.34)] hover:bg-[linear-gradient(180deg,rgba(23,35,56,0.96),rgba(15,25,42,0.94))] hover:text-foreground"
                         }
                       >
                         {buildConversationFilterLabel(filterOption)}
@@ -226,7 +244,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               </div>
             </section>
 
-            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(19,29,47,0.98),rgba(13,22,38,0.95))] shadow-[0_26px_64px_rgba(2,6,23,0.22)]">
+            <section className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-[30px] border border-[rgba(118,138,195,0.18)] bg-[radial-gradient(circle_at_top,rgba(69,98,176,0.14),transparent_26%),linear-gradient(180deg,rgba(19,29,47,0.98),rgba(13,22,38,0.95))] shadow-[0_28px_72px_rgba(2,6,23,0.24)]">
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
                 <h3 className="text-xl font-semibold text-foreground">
                   Directorio
@@ -249,13 +267,15 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                             contactsData.searchTerm,
                             contactsData.conversationFilter,
                           )}
-                          className={`flex items-center gap-4 px-5 py-4 transition ${
+                          className={`group flex items-center gap-4 px-5 py-4 transition duration-200 ${
                             isActive
-                              ? "bg-[linear-gradient(180deg,rgba(33,47,73,0.98),rgba(24,37,60,0.96))]"
-                              : "hover:bg-[linear-gradient(180deg,rgba(24,36,58,0.78),rgba(18,29,48,0.74))]"
+                              ? "bg-[linear-gradient(180deg,rgba(34,50,78,0.98),rgba(24,37,60,0.96))] shadow-[inset_2px_0_0_rgba(115,147,231,0.92)]"
+                              : "hover:bg-[linear-gradient(180deg,rgba(24,36,58,0.88),rgba(18,29,48,0.82))] hover:shadow-[inset_1px_0_0_rgba(108,131,202,0.48)]"
                           }`}
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(27,86,122,0.96),rgba(20,63,93,0.96))] text-sm font-semibold text-cyan-200">
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition duration-200 group-hover:scale-[1.04] ${buildAvatarTone(contact.displayName)}`}
+                          >
                             {getContactInitials(contact.displayName)}
                           </div>
 
@@ -292,8 +312,8 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
             </section>
           </div>
 
-          <div className="flex min-h-0 flex-col gap-5">
-            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_22px_56px_rgba(2,6,23,0.18)]">
+          <div className="flex min-h-[760px] flex-col gap-5">
+            <section className="rounded-[30px] border border-[rgba(118,138,195,0.16)] bg-[radial-gradient(circle_at_top_left,rgba(65,96,170,0.14),transparent_30%),linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_24px_64px_rgba(2,6,23,0.22)]">
               {selectedContact ? (
                 <div className="flex flex-col gap-5">
                   <div>
@@ -303,7 +323,9 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(27,86,122,0.96),rgba(20,63,93,0.96))] text-xl font-semibold text-cyan-200">
+                    <div
+                      className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-semibold ${buildAvatarTone(selectedContact.displayName)}`}
+                    >
                       {getContactInitials(selectedContact.displayName)}
                     </div>
                     <div className="min-w-0">
@@ -353,7 +375,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                     {selectedContact.conversationId ? (
                       <Link
                         href={`/inbox?conversation=${selectedContact.conversationId}`}
-                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(34,49,77,0.98),rgba(23,35,56,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(104,126,188,0.46)] hover:bg-[linear-gradient(180deg,rgba(40,57,89,0.98),rgba(27,41,65,0.96))]"
+                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-300/18 bg-[linear-gradient(180deg,rgba(19,118,91,0.98),rgba(14,87,67,0.96))] px-5 text-sm font-semibold text-emerald-50 shadow-[0_16px_34px_rgba(9,58,46,0.28)] transition duration-200 hover:-translate-y-[1px] hover:border-emerald-200/26 hover:bg-[linear-gradient(180deg,rgba(23,132,102,0.98),rgba(16,95,74,0.96))] hover:shadow-[0_22px_40px_rgba(8,49,40,0.34)]"
                       >
                         Ver conversacion
                       </Link>
@@ -388,7 +410,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               )}
             </section>
 
-            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-5 py-5 shadow-[0_18px_46px_rgba(2,6,23,0.16)]">
+            <section className="rounded-[30px] border border-[rgba(118,138,195,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(24,132,103,0.08),transparent_34%),linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-5 py-5 shadow-[0_18px_46px_rgba(2,6,23,0.16)]">
               <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
                 Importacion manual
               </p>
@@ -426,7 +448,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 />
                 <button
                   type="submit"
-                  className="h-11 rounded-2xl border border-[rgba(82,101,155,0.34)] bg-[linear-gradient(180deg,rgba(24,36,58,0.98),rgba(18,28,45,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(98,119,180,0.42)] hover:bg-[linear-gradient(180deg,rgba(31,45,72,0.98),rgba(22,33,53,0.96))]"
+                  className="h-11 rounded-2xl border border-[rgba(82,101,155,0.34)] bg-[linear-gradient(180deg,rgba(24,36,58,0.98),rgba(18,28,45,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition duration-200 hover:-translate-y-[1px] hover:border-[rgba(98,119,180,0.42)] hover:bg-[linear-gradient(180deg,rgba(31,45,72,0.98),rgba(22,33,53,0.96))]"
                 >
                   Importar CSV
                 </button>
