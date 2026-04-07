@@ -95,7 +95,7 @@ export function ConversationList({
   selectedConversationId,
 }: ConversationListProps) {
   return (
-    <div className="mt-6 space-y-3">
+    <div className="mt-4 h-full space-y-3 overflow-y-auto pr-1">
       {conversations.map((conversation) => {
         const isActive = conversation.id === selectedConversationId;
 

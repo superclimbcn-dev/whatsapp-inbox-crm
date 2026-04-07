@@ -3,8 +3,8 @@ import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import { ConversationThread } from "@/web/components/conversation/conversation-thread";
 import { InboxAutoRefresh } from "@/web/components/inbox/inbox-auto-refresh";
 import { ConversationList } from "@/web/components/inbox/conversation-list";
-import { StatusBadge } from "@/web/components/ui/status-badge";
 import { PanelSurface } from "@/web/components/ui/panel-surface";
+import { StatusBadge } from "@/web/components/ui/status-badge";
 
 function formatSummaryDate(value: string | null): string {
   if (!value) {
@@ -101,31 +101,30 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
   const selectedConversation = inboxData.selectedConversation;
 
   return (
-    <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1.5fr)_360px] xl:gap-6">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-6">
       <InboxAutoRefresh />
-      <div className="grid gap-4 xl:grid-rows-[auto_minmax(0,1fr)] xl:gap-6">
-        <PanelSurface className="bg-[linear-gradient(180deg,rgba(24,38,62,0.94),rgba(16,27,45,0.9))] p-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
+      <PanelSurface className="flex min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(19,31,51,0.96),rgba(12,21,36,0.92))]">
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Resumen operativo
+                Workspace operativo
               </p>
-              <h3 className="mt-3 text-3xl font-semibold text-foreground">
-                Bandeja operativa conectada a conversaciones reales.
+              <h3 className="mt-2 text-2xl font-semibold text-foreground">
+                Inbox conectada a conversaciones reales.
               </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground-muted/82">
-                La shell del inbox ya carga conversaciones y mensajes desde la
-                base de datos, manteniendo una lectura clara y sobria.
-              </p>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex flex-wrap items-center gap-3">
               <StatusBadge tone="accent">
                 {`${inboxData.totalConversations} conversaciones`}
               </StatusBadge>
-              <StatusBadge tone="success">Envío manual activo</StatusBadge>
+              <StatusBadge tone="success">Envio manual activo</StatusBadge>
             </div>
           </div>
-          <div className="mt-6 flex flex-wrap gap-2">
+
+          <div className="mt-5 flex flex-wrap gap-2">
             {(["all", ...CRM_STATES] as const).map((filterOption) => {
               const isActive = inboxData.crmFilter === filterOption;
 
@@ -148,6 +147,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               );
             })}
           </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             {(["all", "mine", "free", "other"] as const).map((filterOption) => {
               const isActive = inboxData.ownerFilter === filterOption;
@@ -171,25 +171,25 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               );
             })}
           </div>
-        </PanelSurface>
+        </div>
 
-        <PanelSurface className="overflow-hidden bg-[linear-gradient(180deg,rgba(19,31,51,0.96),rgba(12,21,36,0.92))]">
-          <div className="grid h-full min-h-[520px] divide-y divide-border xl:grid-cols-[320px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
-            <section className="bg-[linear-gradient(180deg,rgba(10,18,32,0.92),rgba(12,22,38,0.84))] p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                    Bandeja
-                  </p>
-                  <h4 className="mt-2 text-lg font-semibold text-foreground">
-                    Conversaciones
-                  </h4>
-                </div>
-                <StatusBadge tone="info">
-                  {hasConversations ? "Bandeja activa" : "Sin actividad"}
-                </StatusBadge>
+        <div className="grid min-h-0 flex-1 divide-y divide-border xl:grid-cols-[300px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
+          <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,rgba(10,18,32,0.92),rgba(12,22,38,0.84))] p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Bandeja
+                </p>
+                <h4 className="mt-2 text-lg font-semibold text-foreground">
+                  Conversaciones
+                </h4>
               </div>
+              <StatusBadge tone="info">
+                {hasConversations ? "Activa" : "Sin actividad"}
+              </StatusBadge>
+            </div>
 
+            <div className="mt-4 min-h-0 flex-1 overflow-hidden">
               {hasConversations ? (
                 <ConversationList
                   conversations={inboxData.conversations}
@@ -200,7 +200,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
                   }
                 />
               ) : (
-                <div className="mt-6 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(19,30,49,0.96),rgba(14,24,40,0.92))] px-4 py-5">
+                <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(19,30,49,0.96),rgba(14,24,40,0.92))] px-4 py-5">
                   <p className="text-sm font-medium text-foreground">
                     No hay conversaciones para este filtro.
                   </p>
@@ -210,46 +210,44 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
                   </p>
                 </div>
               )}
-            </section>
-
-            <section className="bg-[linear-gradient(180deg,rgba(17,27,44,0.58),rgba(10,18,31,0.22))] p-6">
-              {selectedConversation ? (
-                <ConversationThread conversation={selectedConversation} />
-              ) : (
-                <div className="flex h-full flex-col justify-center rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 text-center shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                    Vista principal
-                  </p>
-                  <h4 className="mt-3 text-2xl font-semibold text-foreground">
-                    El inbox está listo para recibir actividad real.
-                  </h4>
-                  <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-foreground-muted/82">
-                    En cuanto lleguen eventos inbound desde WhatsApp, aquí
-                    aparecerá el historial de mensajes de la conversación
-                    seleccionada.
-                  </p>
-                </div>
-              )}
-            </section>
-          </div>
-        </PanelSurface>
-      </div>
-
-      <PanelSurface className="bg-[linear-gradient(180deg,rgba(18,29,49,0.94),rgba(12,20,35,0.9))] p-6">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-          Panel lateral
-        </p>
-        <h4 className="mt-3 text-xl font-semibold text-foreground">
-          Contexto operativo
-        </h4>
-        <div className="mt-6 space-y-4">
-          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4 transition-all duration-200 hover:border-info/20 hover:shadow-[0_14px_34px_rgba(2,6,23,0.18)]">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-foreground/94">
-                Estado general del inbox
-              </p>
-              <span className="size-1.5 rounded-full bg-success/80" />
             </div>
+          </section>
+
+          <section className="min-h-0 bg-[linear-gradient(180deg,rgba(17,27,44,0.58),rgba(10,18,31,0.22))] p-6">
+            {selectedConversation ? (
+              <ConversationThread conversation={selectedConversation} />
+            ) : (
+              <div className="flex h-full flex-col justify-center rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 text-center shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Vista principal
+                </p>
+                <h4 className="mt-3 text-2xl font-semibold text-foreground">
+                  El inbox esta listo para recibir actividad real.
+                </h4>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-foreground-muted/82">
+                  En cuanto lleguen eventos inbound desde WhatsApp, aqui
+                  aparecera el historial de mensajes de la conversacion
+                  seleccionada.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </PanelSurface>
+
+      <PanelSurface className="flex min-h-0 flex-col bg-[linear-gradient(180deg,rgba(18,29,49,0.9),rgba(12,20,35,0.86))] p-5">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+          Contexto
+        </p>
+        <h4 className="mt-2 text-lg font-semibold text-foreground">
+          Rail operacional
+        </h4>
+
+        <div className="mt-5 min-h-0 space-y-4 overflow-y-auto pr-1">
+          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.86),rgba(13,23,39,0.8))] p-4">
+            <p className="text-sm font-medium text-foreground/94">
+              Estado general
+            </p>
             <p className="mt-2 text-xs leading-6 text-foreground-soft">
               {hasConversations
                 ? `${inboxData.totalConversations} conversaciones disponibles en este filtro.`
@@ -257,27 +255,21 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4 transition-all duration-200 hover:border-info/20 hover:shadow-[0_14px_34px_rgba(2,6,23,0.18)]">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-foreground/94">
-                Conversación seleccionada
-              </p>
-              <span className="size-1.5 rounded-full bg-info/80" />
-            </div>
+          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.86),rgba(13,23,39,0.8))] p-4">
+            <p className="text-sm font-medium text-foreground/94">
+              Conversacion seleccionada
+            </p>
             <p className="mt-2 text-xs leading-6 text-foreground-soft">
               {selectedConversation
                 ? `${selectedConversation.contactName} · ${selectedConversation.phone}`
-                : "Selecciona una conversación cuando haya actividad disponible."}
+                : "Selecciona una conversacion cuando haya actividad disponible."}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4 transition-all duration-200 hover:border-info/20 hover:shadow-[0_14px_34px_rgba(2,6,23,0.18)]">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-foreground/94">
-                Última actividad
-              </p>
-              <span className="size-1.5 rounded-full bg-accent/80" />
-            </div>
+          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.86),rgba(13,23,39,0.8))] p-4">
+            <p className="text-sm font-medium text-foreground/94">
+              Ultima actividad
+            </p>
             <p className="mt-2 text-xs leading-6 text-foreground-soft">
               {selectedConversation
                 ? formatSummaryDate(

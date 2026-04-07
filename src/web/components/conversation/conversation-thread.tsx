@@ -339,7 +339,7 @@ export function ConversationThread({
   const suggestedStage = conversation.suggestedQuickReplyStage;
 
   return (
-    <div className="flex h-full flex-col rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
+    <div className="flex h-full min-h-0 flex-col rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
       <div className="flex flex-col gap-3 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
@@ -384,7 +384,7 @@ export function ConversationThread({
         </div>
       </div>
 
-      <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+      <div className="mt-6 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
         {conversation.messages.length === 0 ? (
           <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.76))] px-5 py-6 text-sm text-foreground-muted/82">
             Esta conversacion todavia no tiene mensajes visibles.
@@ -437,7 +437,10 @@ export function ConversationThread({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 border-t border-border pt-5">
+      <form
+        onSubmit={handleSubmit}
+        className="sticky bottom-0 mt-6 border-t border-border bg-[linear-gradient(180deg,rgba(12,20,34,0.18),rgba(12,20,34,0.94)_18%,rgba(12,20,34,0.98))] pt-5 backdrop-blur-sm"
+      >
         <div className="mb-5 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
