@@ -559,15 +559,8 @@ export function ConversationThread({
                   const newValue = event.target.value;
                   setDraft(newValue);
 
-                  // Check if "/" was typed to trigger quick reply palette
-                  if (newValue.endsWith("/") && !isGeneratingDraft && !isSubmitting) {
-                    const rect = event.target.getBoundingClientRect();
-                    setQuickReplyPalettePosition({
-                      top: rect.top - 10,
-                      left: rect.left,
-                    });
-                    setShowQuickReplyPalette(true);
-                  } else if (!newValue.includes("/")) {
+                  // Close palette if "/" is no longer in the input
+                  if (showQuickReplyPalette && !newValue.includes("/")) {
                     setShowQuickReplyPalette(false);
                   }
 
@@ -576,9 +569,36 @@ export function ConversationThread({
                   }
                 }}
                 onKeyDown={(event) => {
+                  console.log("Key pressed:", event.key, "Current draft:", draft);
+
+                  // Detect "/" to trigger quick reply palette
+                  if (event.key === "/" && !showQuickReplyPalette && !isGeneratingDraft && !isSubmitting) {
+                    console.log("Trigger '/' detected - opening palette");
+                    // Use setTimeout to ensure the "/" is added to the input first
+                    setTimeout(() => {
+                      if (inputRef.current) {
+                        const rect = inputRef.current.getBoundingClientRect();
+                        setQuickReplyPalettePosition({
+                          top: rect.top - 350,
+                          left: rect.left,
+                        });
+                        setShowQuickReplyPalette(true);
+                        console.log("Palette opened at position:", { top: rect.top - 350, left: rect.left });
+                      }
+                    }, 0);
+                  }
+
+                  // Handle Escape to close palette
                   if (event.key === "Escape" && showQuickReplyPalette) {
+                    console.log("Escape pressed - closing palette");
                     setShowQuickReplyPalette(false);
                     event.preventDefault();
+                  }
+
+                  // Handle Arrow keys for navigation when palette is open
+                  if (showQuickReplyPalette && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+                    // Let the palette handle keyboard navigation
+                    event.stopPropagation();
                   }
                 }}
                 placeholder="Escribe un mensaje para este contacto"

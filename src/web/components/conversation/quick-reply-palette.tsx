@@ -82,7 +82,7 @@ export function QuickReplyPalette({
     return (
       <div
         ref={containerRef}
-        className="fixed z-50 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+        className="fixed z-[999] rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
         style={
           anchorPosition
             ? { top: anchorPosition.top, left: anchorPosition.left }
@@ -99,7 +99,7 @@ export function QuickReplyPalette({
   return (
     <div
       ref={containerRef}
-      className="fixed z-50 max-h-80 w-80 overflow-y-auto rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+      className="fixed z-[999] max-h-80 w-80 overflow-y-auto rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
       style={
         anchorPosition
           ? { top: anchorPosition.top, left: anchorPosition.left }
