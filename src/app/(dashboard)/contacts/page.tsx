@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getContactsData } from "@/app/services/contacts/get-contacts-data";
+import { getSettingsData } from "@/app/services/settings/get-settings-data";
 import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import { ContactsWorkspace } from "@/web/components/contacts/contacts-workspace";
 import { PanelSurface } from "@/web/components/ui/panel-surface";
@@ -122,12 +123,15 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
     typeof searchParams.import_error === "string"
       ? searchParams.import_error
       : null;
-  const contactsData = await getContactsData(
-    selectedContactId,
-    searchTerm,
-    conversationFilter,
-    crmFilter,
-  );
+  const [contactsData, settingsData] = await Promise.all([
+    getContactsData(
+      selectedContactId,
+      searchTerm,
+      conversationFilter,
+      crmFilter,
+    ),
+    getSettingsData(),
+  ]);
   const hasContacts = contactsData.contacts.length > 0;
   const selectedContact = contactsData.selectedContact;
 
@@ -306,6 +310,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               conversationFilter={contactsData.conversationFilter}
               crmFilter={contactsData.crmFilter}
               hasContacts={hasContacts}
+              quickReplies={settingsData.quickReplies.filter((reply) => reply.isActive)}
               searchTerm={contactsData.searchTerm}
               selectedContactId={selectedContact?.id ?? null}
             />
