@@ -27,7 +27,6 @@ export function QuickReplyPalette({
 
   useEffect(() => {
     setIsClient(true);
-    console.log("Portal montado no body com sucesso");
   }, []);
 
   useEffect(() => {
@@ -90,16 +89,17 @@ export function QuickReplyPalette({
   }
 
   if (activeReplies.length === 0) {
-    console.log("Renderizando Palette agora (vazia)...");
     return createPortal(
       <div
         ref={containerRef}
-        className="fixed z-[999999] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-h-[200px] rounded-2xl border-4 border-yellow-500 bg-red-600 p-4 shadow-2xl"
+        className="fixed z-[999999] rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-xl p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)]"
+        style={
+          anchorPosition
+            ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
+            : undefined
+        }
       >
-        <p className="text-lg font-bold text-white">
-          PALETTE VAZIA - TESTE DE VISIBILIDADE
-        </p>
-        <p className="text-sm text-white">
+        <p className="text-sm text-foreground-muted/82">
           No hay respuestas rapidas activas disponibles.
         </p>
       </div>,
@@ -107,11 +107,15 @@ export function QuickReplyPalette({
     );
   }
 
-  console.log("Renderizando Palette agora (com", activeReplies.length, "replies)...");
   return createPortal(
     <div
       ref={containerRef}
-      className="fixed z-[999999] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-h-[200px] max-h-80 w-80 overflow-y-auto rounded-2xl border-4 border-yellow-500 bg-red-600 p-2 shadow-2xl"
+      className="fixed z-[999999] max-h-80 w-80 overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-xl p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)]"
+      style={
+        anchorPosition
+          ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
+          : undefined
+      }
     >
       <div className="mb-2 px-3 py-2">
         <p className="text-[10px] uppercase tracking-[0.16em] text-foreground-muted/68">
