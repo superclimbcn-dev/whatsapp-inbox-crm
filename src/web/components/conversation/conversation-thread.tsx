@@ -574,21 +574,15 @@ export function ConversationThread({
                   // Detect "/" to trigger quick reply palette
                   if (event.key === "/" && !showQuickReplyPalette && !isGeneratingDraft && !isSubmitting) {
                     console.log("Trigger '/' detected - opening palette");
-                    // Use setTimeout to ensure the "/" is added to the input first
-                    setTimeout(() => {
-                      if (inputRef.current) {
-                        const rect = inputRef.current.getBoundingClientRect();
-                        // Calculate bottom position: distance from bottom of viewport to top of input
-                        // This positions the palette above the input
-                        const bottom = window.innerHeight - rect.top + 8;
-                        setQuickReplyPalettePosition({
-                          bottom,
-                          left: rect.left,
-                        });
-                        setShowQuickReplyPalette(true);
-                        console.log("Palette opened at position:", { bottom, left: rect.left, windowHeight: window.innerHeight, inputTop: rect.top });
-                      }
-                    }, 0);
+                    // Force center screen positioning for visibility test
+                    const windowHeight = window.innerHeight;
+                    const bottom = windowHeight * 0.3; // 30% from bottom = centered vertically
+                    setQuickReplyPalettePosition({
+                      bottom,
+                      left: window.innerWidth / 2 - 160, // center horizontally (palette is 320px wide)
+                    });
+                    setShowQuickReplyPalette(true);
+                    console.log("Palette FORCED to center screen:", { bottom, windowHeight });
                   }
 
                   // Handle Escape to close palette

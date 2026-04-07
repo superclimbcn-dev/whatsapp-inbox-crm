@@ -79,27 +79,32 @@ export function QuickReplyPalette({
   }, [onClose]);
 
   if (activeReplies.length === 0) {
+    console.log("Renderizando Palette agora (vazia)...");
     return (
       <div
         ref={containerRef}
-        className="fixed z-[9999] rounded-2xl border-2 border-red-500 bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+        className="fixed z-[99999] min-h-[200px] rounded-2xl border-4 border-yellow-500 bg-red-600 p-4 shadow-2xl"
         style={
           anchorPosition
             ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
             : undefined
         }
       >
-        <p className="text-sm text-foreground-muted/82">
+        <p className="text-lg font-bold text-white">
+          PALETTE VAZIA - TESTE DE VISIBILIDADE
+        </p>
+        <p className="text-sm text-white">
           No hay respuestas rapidas activas disponibles.
         </p>
       </div>
     );
   }
 
+  console.log("Renderizando Palette agora (com", activeReplies.length, "replies)...");
   return (
     <div
       ref={containerRef}
-      className="fixed z-[9999] max-h-80 w-80 overflow-y-auto rounded-2xl border-2 border-red-500 bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+      className="fixed z-[99999] min-h-[200px] max-h-80 w-80 overflow-y-auto rounded-2xl border-4 border-yellow-500 bg-red-600 p-2 shadow-2xl"
       style={
         anchorPosition
           ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
