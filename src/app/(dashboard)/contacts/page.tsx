@@ -4,27 +4,18 @@ import { getContactsData } from "@/app/services/contacts/get-contacts-data";
 import { PanelSurface } from "@/web/components/ui/panel-surface";
 import { StatusBadge } from "@/web/components/ui/status-badge";
 
-function formatActivityDate(value: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "short",
-  }).format(new Date(value));
-}
-
 function buildStatusLabel(
   status: "closed" | "open" | "pending" | null,
 ): string {
   switch (status) {
     case "open":
-      return "Conversacion abierta";
+      return "Con conversacion";
     case "pending":
-      return "Conversacion pendiente";
+      return "Con conversacion";
     case "closed":
-      return "Conversacion cerrada";
+      return "Con conversacion";
     default:
-      return "Sin conversacion activa";
+      return "Sin conversacion";
   }
 }
 
@@ -75,6 +66,20 @@ function parseImportMetric(value: string | string[] | undefined): number | null 
   return parsedValue;
 }
 
+function getContactInitials(value: string): string {
+  const words = value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (words.length === 0) {
+    return "CT";
+  }
+
+  return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
+}
+
 export default async function ContactsPage(props: PageProps<"/contacts">) {
   const searchParams = await props.searchParams;
   const selectedContactId =
@@ -102,19 +107,19 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
   const selectedContact = contactsData.selectedContact;
 
   return (
-    <PanelSurface className="flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(19,31,51,0.96),rgba(12,21,36,0.92))]">
-      <div className="border-b border-border px-6 py-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
+    <PanelSurface className="flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(18,28,45,0.98),rgba(10,18,31,0.96))]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 py-5 xl:px-6 xl:py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+          <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
               Directorio operativo
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-foreground">
+            <h2 className="mt-2 max-w-2xl text-[30px] font-semibold leading-[1.15] text-foreground">
               Contactos reales conectados a la operacion.
-            </h3>
+            </h2>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <StatusBadge tone="accent">
               {`${contactsData.totalContacts} contactos`}
             </StatusBadge>
@@ -127,59 +132,285 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
           </div>
         </div>
 
-        <div className="mt-5 space-y-4">
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <form action="/contacts" method="get" className="min-w-0">
-              <label className="block">
-                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Buscar contacto
-                </span>
-                <div className="mt-3 flex flex-col gap-3 md:flex-row">
-                  <input
-                    type="search"
-                    name="q"
-                    defaultValue={contactsData.searchTerm}
-                    placeholder="Buscar por nombre o telefono"
-                    className="h-12 min-w-0 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-                  />
-                  <input
-                    type="hidden"
-                    name="conversation"
-                    value={
-                      contactsData.conversationFilter === "all"
-                        ? ""
-                        : contactsData.conversationFilter
-                    }
-                  />
-                  <button
-                    type="submit"
-                    className="h-12 rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
-                  >
-                    Buscar
-                  </button>
-                </div>
-              </label>
-            </form>
+        <div className="mt-5 grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_360px]">
+          <div className="flex min-h-0 flex-col gap-5">
+            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_22px_56px_rgba(2,6,23,0.18)]">
+              <div className="flex flex-col gap-4">
+                <form action="/contacts" method="get" className="max-w-3xl">
+                  <label className="block">
+                    <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                      Buscar contacto
+                    </span>
+                    <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
+                      <input
+                        type="search"
+                        name="q"
+                        defaultValue={contactsData.searchTerm}
+                        placeholder="Buscar por nombre o telefono..."
+                        className="h-11 min-w-0 flex-1 rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition placeholder:text-foreground-muted/58 focus:border-accent/36"
+                      />
+                      <input
+                        type="hidden"
+                        name="conversation"
+                        value={
+                          contactsData.conversationFilter === "all"
+                            ? ""
+                            : contactsData.conversationFilter
+                        }
+                      />
+                      <button
+                        type="submit"
+                        className="h-11 shrink-0 rounded-2xl border border-[rgba(82,101,155,0.34)] bg-[linear-gradient(180deg,rgba(24,36,58,0.98),rgba(18,28,45,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(98,119,180,0.42)] hover:bg-[linear-gradient(180deg,rgba(31,45,72,0.98),rgba(22,33,53,0.96))]"
+                      >
+                        Buscar
+                      </button>
+                    </div>
+                  </label>
+                </form>
 
-            <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(14,23,38,0.92),rgba(11,18,31,0.9))] px-4 py-4">
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    ["all", "with_conversation", "without_conversation"] as const
+                  ).map((filterOption) => {
+                    const params = new URLSearchParams();
+
+                    if (contactsData.searchTerm) {
+                      params.set("q", contactsData.searchTerm);
+                    }
+
+                    if (filterOption !== "all") {
+                      params.set("conversation", filterOption);
+                    }
+
+                    const href = params.toString()
+                      ? `/contacts?${params.toString()}`
+                      : "/contacts";
+                    const isActive =
+                      contactsData.conversationFilter === filterOption;
+
+                    return (
+                      <a
+                        key={filterOption}
+                        href={href}
+                        className={
+                          isActive
+                            ? "rounded-2xl border border-[rgba(86,107,167,0.42)] bg-[linear-gradient(180deg,rgba(41,56,89,0.98),rgba(26,39,63,0.96))] px-4 py-2 text-xs font-medium text-foreground shadow-[0_12px_26px_rgba(7,12,24,0.18)]"
+                            : "rounded-2xl border border-[rgba(96,114,170,0.2)] bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(96,114,170,0.34)] hover:text-foreground"
+                        }
+                      >
+                        {buildConversationFilterLabel(filterOption)}
+                      </a>
+                    );
+                  })}
+                </div>
+
+                {importError ? (
+                  <p className="rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
+                    {importError}
+                  </p>
+                ) : importedCount !== null &&
+                  duplicatedCount !== null &&
+                  ignoredCount !== null ? (
+                  <div className="flex flex-wrap gap-2.5">
+                    <StatusBadge tone="success">
+                      {`${importedCount} importados`}
+                    </StatusBadge>
+                    <StatusBadge tone="info">
+                      {`${duplicatedCount} duplicados`}
+                    </StatusBadge>
+                    <StatusBadge tone="base">
+                      {`${ignoredCount} ignorados`}
+                    </StatusBadge>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(19,29,47,0.98),rgba(13,22,38,0.95))] shadow-[0_26px_64px_rgba(2,6,23,0.22)]">
+              <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+                <h3 className="text-xl font-semibold text-foreground">
+                  Directorio
+                </h3>
+                <StatusBadge tone="success">Listado real</StatusBadge>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {hasContacts ? (
+                  <div className="divide-y divide-border/70">
+                    {contactsData.contacts.map((contact) => {
+                      const isActive = contact.id === selectedContact?.id;
+                      const hasConversation = Boolean(contact.conversationId);
+
+                      return (
+                        <Link
+                          key={contact.id}
+                          href={buildContactsHref(
+                            contact.id,
+                            contactsData.searchTerm,
+                            contactsData.conversationFilter,
+                          )}
+                          className={`flex items-center gap-4 px-5 py-4 transition ${
+                            isActive
+                              ? "bg-[linear-gradient(180deg,rgba(33,47,73,0.98),rgba(24,37,60,0.96))]"
+                              : "hover:bg-[linear-gradient(180deg,rgba(24,36,58,0.78),rgba(18,29,48,0.74))]"
+                          }`}
+                        >
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(27,86,122,0.96),rgba(20,63,93,0.96))] text-sm font-semibold text-cyan-200">
+                            {getContactInitials(contact.displayName)}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-semibold text-foreground">
+                              {contact.displayName}
+                            </p>
+                            <p className="mt-1 truncate text-sm text-foreground-soft">
+                              {contact.phone}
+                            </p>
+                          </div>
+
+                          <StatusBadge tone={hasConversation ? "info" : "base"}>
+                            {hasConversation ? "Con conv." : "Sin conv."}
+                          </StatusBadge>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="px-5 py-5">
+                    <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-5">
+                      <p className="text-sm font-medium text-foreground">
+                        No encontramos contactos para esta busqueda.
+                      </p>
+                      <p className="mt-2 text-xs leading-6 text-foreground-muted/76">
+                        Los contactos reales se crean automaticamente cuando
+                        llegan conversaciones inbound al webhook.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <div className="flex min-h-0 flex-col gap-5">
+            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(15,24,40,0.92))] px-5 py-5 shadow-[0_22px_56px_rgba(2,6,23,0.18)]">
+              {selectedContact ? (
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                      Contacto seleccionado
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(27,86,122,0.96),rgba(20,63,93,0.96))] text-xl font-semibold text-cyan-200">
+                      {getContactInitials(selectedContact.displayName)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-[28px] font-semibold leading-tight text-foreground">
+                        {selectedContact.displayName}
+                      </h3>
+                      <p className="mt-1 truncate text-base text-foreground-soft">
+                        {selectedContact.phone}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-5">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-foreground-muted/78">
+                          Estado
+                        </span>
+                        <StatusBadge
+                          tone={
+                            selectedContact.conversationId ? "info" : "base"
+                          }
+                        >
+                          {buildStatusLabel(selectedContact.status)}
+                        </StatusBadge>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-foreground-muted/78">
+                          Telefono
+                        </span>
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {selectedContact.phone}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-foreground-muted/78">
+                          Workspace
+                        </span>
+                        <span className="truncate text-sm font-medium text-foreground">
+                          superclimbcn
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {selectedContact.conversationId ? (
+                      <Link
+                        href={`/inbox?conversation=${selectedContact.conversationId}`}
+                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(34,49,77,0.98),rgba(23,35,56,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(104,126,188,0.46)] hover:bg-[linear-gradient(180deg,rgba(40,57,89,0.98),rgba(27,41,65,0.96))]"
+                      >
+                        Ver conversacion
+                      </Link>
+                    ) : (
+                      <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-[rgba(96,114,170,0.16)] bg-[linear-gradient(180deg,rgba(18,28,45,0.7),rgba(13,22,37,0.66))] px-5 text-sm font-medium text-foreground-muted/56">
+                        Sin conversacion
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled
+                      className="h-11 rounded-2xl border border-[rgba(96,114,170,0.16)] bg-[linear-gradient(180deg,rgba(18,28,45,0.7),rgba(13,22,37,0.66))] px-5 text-sm font-medium text-foreground-muted/56"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Contacto seleccionado
+                  </p>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Todavia no hay contactos disponibles.
+                  </h3>
+                  <p className="text-sm leading-7 text-foreground-muted/82">
+                    Cuando llegue actividad real desde WhatsApp, esta vista
+                    mostrara aqui el detalle del contacto seleccionado.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-5 py-5 shadow-[0_18px_46px_rgba(2,6,23,0.16)]">
               <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
                 Importacion manual
               </p>
-              <p className="mt-2 text-sm text-foreground/92">
+              <h4 className="mt-3 text-2xl font-semibold text-foreground">
                 CSV con cabecera{" "}
-                <span className="font-medium text-foreground">name,phone</span>{" "}
-                o{" "}
-                <span className="font-medium text-foreground">nombre,telefono</span>.
+                <span className="font-mono text-lg text-foreground/92">
+                  name,phone
+                </span>
+              </h4>
+              <p className="mt-2 text-sm leading-7 text-foreground-soft">
+                CSV con cabecera name,phone o nombre,telefono.
               </p>
-              <p className="mt-1 text-xs leading-6 text-foreground-soft">
-                Formato minimo, hasta 500 filas y solo contactos con telefono valido.
+              <p className="text-sm leading-7 text-foreground-soft">
+                Formato minimo, hasta 500 filas y solo contactos con telefono
+                valido.
               </p>
 
               <form
                 action="/api/contacts/import-csv"
                 method="post"
                 encType="multipart/form-data"
-                className="mt-4 flex flex-col gap-3"
+                className="mt-5 flex flex-col gap-4"
               >
                 <input type="hidden" name="q" value={contactsData.searchTerm} />
                 <input
@@ -191,231 +422,18 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                   type="file"
                   name="file"
                   accept=".csv,text/csv"
-                  className="block h-12 min-w-0 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(46,62,109,0.96)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+                  className="block w-full min-w-0 rounded-2xl border border-dashed border-border bg-background-soft px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(39,54,86,0.98)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
                 />
                 <button
                   type="submit"
-                  className="h-12 rounded-2xl border border-[rgba(93,112,161,0.32)] bg-[linear-gradient(180deg,rgba(24,35,57,0.96),rgba(18,28,45,0.94))] px-5 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(8,12,23,0.22)] transition hover:border-[rgba(108,128,188,0.42)] hover:bg-[linear-gradient(180deg,rgba(30,43,69,0.98),rgba(22,33,53,0.96))]"
+                  className="h-11 rounded-2xl border border-[rgba(82,101,155,0.34)] bg-[linear-gradient(180deg,rgba(24,36,58,0.98),rgba(18,28,45,0.96))] px-5 text-sm font-semibold text-foreground shadow-[0_14px_30px_rgba(7,12,24,0.2)] transition hover:border-[rgba(98,119,180,0.42)] hover:bg-[linear-gradient(180deg,rgba(31,45,72,0.98),rgba(22,33,53,0.96))]"
                 >
                   Importar CSV
                 </button>
               </form>
-            </div>
+            </section>
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(["all", "with_conversation", "without_conversation"] as const).map(
-              (filterOption) => {
-                const params = new URLSearchParams();
-
-                if (contactsData.searchTerm) {
-                  params.set("q", contactsData.searchTerm);
-                }
-
-                if (filterOption !== "all") {
-                  params.set("conversation", filterOption);
-                }
-
-                const href = params.toString()
-                  ? `/contacts?${params.toString()}`
-                  : "/contacts";
-                const isActive = contactsData.conversationFilter === filterOption;
-
-                return (
-                  <a
-                    key={filterOption}
-                    href={href}
-                    className={
-                      isActive
-                        ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
-                        : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
-                    }
-                  >
-                    {buildConversationFilterLabel(filterOption)}
-                  </a>
-                );
-              },
-            )}
-          </div>
-
-          {importError ? (
-            <p className="rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-sm text-amber-200">
-              {importError}
-            </p>
-          ) : importedCount !== null &&
-            duplicatedCount !== null &&
-            ignoredCount !== null ? (
-            <div className="flex flex-wrap gap-3">
-              <StatusBadge tone="success">
-                {`${importedCount} importados`}
-              </StatusBadge>
-              <StatusBadge tone="info">
-                {`${duplicatedCount} duplicados`}
-              </StatusBadge>
-              <StatusBadge tone="base">
-                {`${ignoredCount} ignorados`}
-              </StatusBadge>
-            </div>
-          ) : null}
         </div>
-      </div>
-
-      <div className="grid min-h-0 flex-1 divide-y divide-border xl:grid-cols-[380px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
-        <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,rgba(10,18,32,0.92),rgba(12,22,38,0.84))] p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Contactos
-              </p>
-              <h4 className="mt-2 text-lg font-semibold text-foreground">
-                Directorio
-              </h4>
-            </div>
-            <StatusBadge tone="info">
-              {hasContacts ? "Listado real" : "Sin resultados"}
-            </StatusBadge>
-          </div>
-
-          <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-            {hasContacts ? (
-              <div className="space-y-3">
-                {contactsData.contacts.map((contact) => {
-                  const isActive = contact.id === selectedContact?.id;
-
-                  return (
-                    <Link
-                      key={contact.id}
-                      href={buildContactsHref(
-                        contact.id,
-                        contactsData.searchTerm,
-                        contactsData.conversationFilter,
-                      )}
-                      className={`block rounded-2xl border px-4 py-4 shadow-[var(--shadow-layer)] transition-all duration-200 ${
-                        isActive
-                          ? "border-accent/28 bg-[linear-gradient(180deg,rgba(32,46,74,0.98),rgba(18,29,48,0.95))] shadow-[var(--shadow-accent)]"
-                          : "border-border-strong bg-[linear-gradient(180deg,rgba(19,30,49,0.98),rgba(14,24,40,0.94))] hover:border-accent/24 hover:bg-[linear-gradient(180deg,rgba(24,37,60,0.98),rgba(16,27,45,0.96))] hover:shadow-[0_18px_38px_rgba(2,6,23,0.24)]"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground/96">
-                            {contact.displayName}
-                          </p>
-                          <p className="mt-1 truncate text-xs text-foreground-soft">
-                            {contact.phone}
-                          </p>
-                        </div>
-                        <p className="text-[11px] text-foreground-soft">
-                          {formatActivityDate(contact.lastActivityAt)}
-                        </p>
-                      </div>
-                      <p className="mt-3 text-[11px] uppercase tracking-[0.08em] text-foreground-soft">
-                        {buildStatusLabel(contact.status)}
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(19,30,49,0.96),rgba(14,24,40,0.92))] px-4 py-5">
-                <p className="text-sm font-medium text-foreground">
-                  No encontramos contactos para esta busqueda.
-                </p>
-                <p className="mt-2 text-xs leading-6 text-foreground-muted/76">
-                  Los contactos reales se crean automaticamente cuando llegan
-                  conversaciones inbound al webhook.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="min-h-0 bg-[linear-gradient(180deg,rgba(17,27,44,0.58),rgba(10,18,31,0.22))] p-6">
-          {selectedContact ? (
-            <div className="flex h-full min-h-0 flex-col rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
-              <div className="border-b border-border pb-5">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Contacto seleccionado
-                </p>
-                <h4 className="mt-3 text-2xl font-semibold text-foreground">
-                  {selectedContact.displayName}
-                </h4>
-                <p className="mt-2 text-sm text-foreground-muted/82">
-                  {selectedContact.phone}
-                </p>
-              </div>
-
-              <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4">
-                    <p className="text-sm font-medium text-foreground/94">
-                      Telefono
-                    </p>
-                    <p className="mt-2 text-xs leading-6 text-foreground-soft">
-                      {selectedContact.phone}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4">
-                    <p className="text-sm font-medium text-foreground/94">
-                      Identificador WA
-                    </p>
-                    <p className="mt-2 text-xs leading-6 text-foreground-soft">
-                      {selectedContact.waContactId ?? "No disponible"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4">
-                    <p className="text-sm font-medium text-foreground/94">
-                      Ultima actividad
-                    </p>
-                    <p className="mt-2 text-xs leading-6 text-foreground-soft">
-                      {formatActivityDate(selectedContact.lastActivityAt)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.82))] p-4">
-                    <p className="text-sm font-medium text-foreground/94">
-                      Estado operativo
-                    </p>
-                    <p className="mt-2 text-xs leading-6 text-foreground-soft">
-                      {buildStatusLabel(selectedContact.status)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 border-t border-border pt-5">
-                {selectedContact.conversationId ? (
-                  <Link
-                    href={`/inbox?conversation=${selectedContact.conversationId}`}
-                    className="inline-flex h-12 items-center rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)] transition hover:border-[rgba(108,128,196,0.52)] hover:bg-[linear-gradient(180deg,rgba(76,95,156,0.98),rgba(46,62,109,1))]"
-                  >
-                    Abrir conversacion en Inbox
-                  </Link>
-                ) : (
-                  <p className="text-sm text-foreground-muted/82">
-                    Este contacto todavia no tiene una conversacion activa en
-                    Inbox.
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full flex-col justify-center rounded-[28px] border border-accent/16 bg-[radial-gradient(circle_at_top,rgba(111,124,255,0.12),transparent_28%),linear-gradient(180deg,rgba(22,35,56,0.82),rgba(12,20,34,0.66))] p-6 text-center shadow-[0_24px_70px_rgba(2,6,23,0.24)]">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Ficha operativa
-              </p>
-              <h4 className="mt-3 text-2xl font-semibold text-foreground">
-                Todavia no hay contactos disponibles.
-              </h4>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-foreground-muted/82">
-                Cuando llegue actividad real desde WhatsApp, esta vista
-                mostrara aqui el detalle del contacto seleccionado.
-              </p>
-            </div>
-          )}
-        </section>
       </div>
     </PanelSurface>
   );
