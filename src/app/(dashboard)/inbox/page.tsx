@@ -101,7 +101,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
   const selectedConversation = inboxData.selectedConversation;
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-6">
+    <div className="grid min-h-full gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-6">
       <InboxAutoRefresh />
 
       <PanelSurface className="flex min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(19,31,51,0.96),rgba(12,21,36,0.92))]">

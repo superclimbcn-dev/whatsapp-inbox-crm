@@ -125,8 +125,8 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
   const selectedContact = contactsData.selectedContact;
 
   return (
-    <PanelSurface className="flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(70,110,204,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(27,143,111,0.14),transparent_26%),linear-gradient(180deg,rgba(18,28,45,0.98),rgba(10,18,31,0.96))]">
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 xl:px-6 xl:py-6">
+    <PanelSurface className="flex min-h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(70,110,204,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(27,143,111,0.14),transparent_26%),linear-gradient(180deg,rgba(18,28,45,0.98),rgba(10,18,31,0.96))]">
+      <div className="flex min-h-full flex-1 flex-col overflow-y-auto px-5 py-5 xl:px-6 xl:py-6">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
