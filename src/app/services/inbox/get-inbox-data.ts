@@ -120,6 +120,9 @@ export type InboxSelection = {
   crmState: CrmState;
   isTakeControlAvailable: boolean;
   messages: InboxMessage[];
+  metadata?: {
+    internal_notes?: string;
+  } | null;
   ownerUserId: string | null;
   phone: string;
   quickReplies: QuickReply[];

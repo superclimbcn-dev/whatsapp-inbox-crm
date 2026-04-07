@@ -7,6 +7,9 @@ type UpdateConversationCrmRequestBody = {
   conversationId?: string;
   crmState?: string;
   internalNote?: string;
+  metadata?: {
+    internal_notes?: string;
+  };
 };
 
 function isUpdateConversationCrmRequestBody(
@@ -40,6 +43,17 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json(
       {
         error: "Faltan datos obligatorios para guardar el contexto CRM.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (body.metadata && typeof body.metadata !== "object") {
+    return NextResponse.json(
+      {
+        error: "El campo metadata debe ser un objeto válido.",
       },
       {
         status: 400,

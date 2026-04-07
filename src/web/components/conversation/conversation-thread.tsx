@@ -69,6 +69,9 @@ export function ConversationThread({
   const [crmInternalNote, setCrmInternalNote] = useState(
     conversation.crmInternalNote,
   );
+  const [internalNotes, setInternalNotes] = useState(
+    conversation.metadata?.internal_notes ?? "",
+  );
   const [crmState, setCrmState] = useState<CrmState>(conversation.crmState);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +84,7 @@ export function ConversationThread({
   );
   const [hasManualStageOverride, setHasManualStageOverride] = useState(false);
   const submitInFlightRef = useRef(false);
+  const saveNotesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showQuickReplyPalette, setShowQuickReplyPalette] = useState(false);
   const [quickReplyPalettePosition, setQuickReplyPalettePosition] = useState<{
     bottom: number;
@@ -195,6 +199,51 @@ export function ConversationThread({
     } finally {
       setIsSavingCrm(false);
     }
+  }
+
+  async function handleSaveInternalNotes(notes: string) {
+    if (isSavingCrm) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/conversations/crm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: conversation.conversationId,
+          metadata: {
+            internal_notes: notes,
+          },
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        setError(result?.error ?? "No pudimos guardar las notas operativas.");
+      }
+    } catch {
+      setError("No pudimos guardar las notas operativas.");
+    }
+  }
+
+  function handleInternalNotesChange(value: string) {
+    setInternalNotes(value);
+
+    // Clear existing timeout
+    if (saveNotesTimeoutRef.current) {
+      clearTimeout(saveNotesTimeoutRef.current);
+    }
+
+    // Set new timeout for debounce (500ms)
+    saveNotesTimeoutRef.current = setTimeout(() => {
+      handleSaveInternalNotes(value);
+    }, 500);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -413,64 +462,82 @@ export function ConversationThread({
         className="sticky bottom-0 mt-6 border-t border-border bg-[linear-gradient(180deg,rgba(12,20,34,0.18),rgba(12,20,34,0.94)_18%,rgba(12,20,34,0.98))] pt-5 backdrop-blur-sm"
       >
         <div className="mb-5 rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                  Contexto CRM
-                </p>
-                <p
-                  className={cn(
-                    "mt-2 text-[11px] uppercase tracking-[0.08em]",
-                    buildCrmStateToneClass(crmState),
-                  )}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Contexto CRM
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-2 text-[11px] uppercase tracking-[0.08em]",
+                      buildCrmStateToneClass(crmState),
+                    )}
+                  >
+                    {buildCrmStateLabel(crmState)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveCrm}
+                  disabled={isSavingCrm || isSubmitting || isGeneratingDraft}
+                  className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {buildCrmStateLabel(crmState)}
-                </p>
+                  {isSavingCrm ? "Guardando..." : "Guardar contexto"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleSaveCrm}
-                disabled={isSavingCrm || isSubmitting || isGeneratingDraft}
-                className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSavingCrm ? "Guardando..." : "Guardar contexto"}
-              </button>
+
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Estado del lead
+                </span>
+                <select
+                  value={crmState}
+                  onChange={(event) => setCrmState(event.target.value as CrmState)}
+                  disabled={isSavingCrm}
+                  className="mt-2 h-12 w-full rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
+                >
+                  {CRM_STATES.map((stateOption) => (
+                    <option key={stateOption} value={stateOption}>
+                      {buildCrmStateLabel(stateOption)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                  Nota interna
+                </span>
+                <textarea
+                  value={crmInternalNote}
+                  onChange={(event) => setCrmInternalNote(event.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  disabled={isSavingCrm}
+                  placeholder="Anade una nota operativa breve para esta conversacion"
+                  className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
+                />
+              </label>
+
+              <div className="border-t border-border/60 pt-4">
+                <label className="block">
+                  <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
+                    Notas Operativas
+                  </span>
+                  <p className="mt-1 text-xs text-foreground-muted/68">
+                    Notas internas del equipo (no se envian al cliente)
+                  </p>
+                  <textarea
+                    value={internalNotes}
+                    onChange={(event) => handleInternalNotesChange(event.target.value)}
+                    rows={4}
+                    placeholder="Escribe notas operativas internas para esta conversacion..."
+                    className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
+                  />
+                </label>
+              </div>
             </div>
-
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Estado del lead
-              </span>
-              <select
-                value={crmState}
-                onChange={(event) => setCrmState(event.target.value as CrmState)}
-                disabled={isSavingCrm}
-                className="mt-2 h-12 w-full rounded-2xl border border-border bg-background-soft px-4 text-sm text-foreground outline-none transition focus:border-accent/40"
-              >
-                {CRM_STATES.map((stateOption) => (
-                  <option key={stateOption} value={stateOption}>
-                    {buildCrmStateLabel(stateOption)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-[0.24em] text-foreground-muted/72">
-                Nota interna
-              </span>
-              <textarea
-                value={crmInternalNote}
-                onChange={(event) => setCrmInternalNote(event.target.value)}
-                maxLength={500}
-                rows={3}
-                disabled={isSavingCrm}
-                placeholder="Anade una nota operativa breve para esta conversacion"
-                className="mt-2 w-full rounded-2xl border border-border bg-background-soft px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent/40"
-              />
-            </label>
-          </div>
         </div>
 
         <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(16,26,43,0.94),rgba(12,20,35,0.88))] p-4">

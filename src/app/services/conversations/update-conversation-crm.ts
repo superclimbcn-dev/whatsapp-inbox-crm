@@ -10,6 +10,7 @@ type ConversationMetadata = {
     internal_note?: string | null;
     state?: CrmState;
   };
+  internal_notes?: string | null;
 };
 
 type ConversationRow = {
@@ -22,6 +23,9 @@ export type UpdateConversationCrmInput = {
   conversationId: string;
   crmState: CrmState;
   internalNote: string;
+  metadata?: {
+    internal_notes?: string;
+  };
 };
 
 function normalizeInternalNote(value: string): string {
@@ -32,6 +36,7 @@ export async function updateConversationCrm({
   conversationId,
   crmState,
   internalNote,
+  metadata,
 }: UpdateConversationCrmInput): Promise<void> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -55,15 +60,20 @@ export async function updateConversationCrm({
     throw new Error("No pudimos encontrar la conversación solicitada.");
   }
 
-  const metadata = conversation.metadata ?? {};
+  const conversationMetadata = conversation.metadata ?? {};
   const nextMetadata: ConversationMetadata = {
-    ...metadata,
+    ...conversationMetadata,
     crm: {
-      ...metadata.crm,
+      ...conversationMetadata.crm,
       internal_note: normalizeInternalNote(internalNote) || null,
       state: crmState,
     },
   };
+
+  // Handle metadata updates for internal_notes
+  if (metadata?.internal_notes !== undefined) {
+    nextMetadata.internal_notes = normalizeInternalNote(metadata.internal_notes) || null;
+  }
 
   const { error: updateError } = await admin
     .from("conversations")
