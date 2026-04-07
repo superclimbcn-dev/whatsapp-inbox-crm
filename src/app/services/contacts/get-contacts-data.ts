@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/adapters/supabase/client-admin";
 import { createSupabaseServerClient } from "@/adapters/supabase/client-server";
 import { ensureUserContext } from "@/app/services/auth/ensure-user-context";
+import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 
 type ContactRow = {
   created_at: string;
@@ -17,6 +18,11 @@ type ConversationRow = {
   created_at: string;
   id: string;
   last_message_at: string | null;
+  metadata: {
+    crm?: {
+      state?: CrmState;
+    };
+  } | null;
   status: "closed" | "open" | "pending";
 };
 
@@ -24,6 +30,7 @@ const CONTACTS_VIEW_LIMIT = 1000;
 
 export type ContactListItem = {
   conversationId: string | null;
+  crmState: CrmState | null;
   displayName: string;
   id: string;
   lastActivityAt: string;
@@ -35,6 +42,7 @@ export type ContactListItem = {
 export type SelectedContact = ContactListItem;
 
 export type ContactsData = {
+  crmFilter: CrmState | "all";
   conversationFilter: "all" | "with_conversation" | "without_conversation";
   contacts: ContactListItem[];
   loadedContacts: number;
@@ -68,10 +76,23 @@ function compareByRecentActivity(
   );
 }
 
+function resolveCrmState(
+  conversation: ConversationRow | undefined,
+): CrmState | null {
+  if (!conversation) {
+    return null;
+  }
+
+  const crmState = conversation.metadata?.crm?.state;
+
+  return crmState && CRM_STATES.includes(crmState) ? crmState : "nuevo";
+}
+
 export async function getContactsData(
   selectedContactId?: string,
   rawSearchTerm?: string,
   conversationFilter: ContactsData["conversationFilter"] = "all",
+  crmFilter: ContactsData["crmFilter"] = "all",
 ): Promise<ContactsData> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -80,6 +101,7 @@ export async function getContactsData(
 
   if (!user) {
     return {
+      crmFilter,
       conversationFilter,
       contacts: [],
       loadedContacts: 0,
@@ -127,6 +149,7 @@ export async function getContactsData(
 
   if (contactRows.length === 0) {
     return {
+      crmFilter,
       conversationFilter,
       contacts: [],
       loadedContacts: 0,
@@ -140,7 +163,7 @@ export async function getContactsData(
   const contactIdsSet = new Set(contactIds);
   const { data: conversationRows, error: conversationsError } = await admin
     .from("conversations")
-    .select("id, contact_id, status, last_message_at, created_at")
+    .select("id, contact_id, status, last_message_at, created_at, metadata")
     .eq("account_id", internalUser.account_id)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -168,6 +191,7 @@ export async function getContactsData(
 
       return {
         conversationId: conversation?.id ?? null,
+        crmState: resolveCrmState(conversation),
         displayName: buildDisplayName(contact),
         id: contact.id,
         lastActivityAt: buildLastActivityAt(contact, conversation),
@@ -183,12 +207,16 @@ export async function getContactsData(
           ? !contact.conversationId
           : true,
     )
+    .filter((contact) =>
+      crmFilter === "all" ? true : contact.crmState === crmFilter,
+    )
     .sort(compareByRecentActivity);
 
   const selectedContact =
     contacts.find((contact) => contact.id === selectedContactId) ?? contacts[0];
 
   return {
+    crmFilter,
     conversationFilter,
     contacts,
     loadedContacts: contacts.length,

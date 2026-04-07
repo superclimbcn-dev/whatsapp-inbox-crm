@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { getContactsData } from "@/app/services/contacts/get-contacts-data";
+import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
+import { ContactsWorkspace } from "@/web/components/contacts/contacts-workspace";
 import { PanelSurface } from "@/web/components/ui/panel-surface";
 import { StatusBadge } from "@/web/components/ui/status-badge";
 
@@ -32,26 +34,6 @@ function buildConversationFilterLabel(
   }
 }
 
-function buildContactsHref(
-  contactId: string,
-  searchTerm: string,
-  conversationFilter: "all" | "with_conversation" | "without_conversation",
-): string {
-  const params = new URLSearchParams();
-
-  params.set("contact", contactId);
-
-  if (searchTerm) {
-    params.set("q", searchTerm);
-  }
-
-  if (conversationFilter !== "all") {
-    params.set("conversation", conversationFilter);
-  }
-
-  return `/contacts?${params.toString()}`;
-}
-
 function parseImportMetric(value: string | string[] | undefined): number | null {
   if (typeof value !== "string") {
     return null;
@@ -64,6 +46,43 @@ function parseImportMetric(value: string | string[] | undefined): number | null 
   }
 
   return parsedValue;
+}
+
+function buildCrmFilterLabel(value: CrmState | "all"): string {
+  switch (value) {
+    case "nuevo":
+      return "Nuevo";
+    case "pendiente":
+      return "Pendiente";
+    case "presupuesto_enviado":
+      return "Presupuesto enviado";
+    case "agendado":
+      return "Agendado";
+    case "cerrado":
+      return "Cerrado";
+    case "perdido":
+      return "Perdido";
+    default:
+      return "Todos";
+  }
+}
+
+const detailAvatarPalette = [
+  "bg-[linear-gradient(180deg,rgba(24,104,132,0.96),rgba(16,70,97,0.98))] text-cyan-100 shadow-[0_16px_34px_rgba(8,56,79,0.34)] ring-1 ring-cyan-300/16",
+  "bg-[linear-gradient(180deg,rgba(77,52,156,0.96),rgba(50,33,104,0.98))] text-violet-100 shadow-[0_16px_34px_rgba(40,28,92,0.34)] ring-1 ring-violet-300/16",
+  "bg-[linear-gradient(180deg,rgba(21,117,91,0.96),rgba(15,76,60,0.98))] text-emerald-100 shadow-[0_16px_34px_rgba(13,64,52,0.34)] ring-1 ring-emerald-300/16",
+  "bg-[linear-gradient(180deg,rgba(133,98,24,0.96),rgba(87,63,16,0.98))] text-amber-100 shadow-[0_16px_34px_rgba(78,55,13,0.34)] ring-1 ring-amber-300/16",
+  "bg-[linear-gradient(180deg,rgba(136,44,92,0.96),rgba(87,27,58,0.98))] text-fuchsia-100 shadow-[0_16px_34px_rgba(79,21,52,0.34)] ring-1 ring-fuchsia-300/16",
+  "bg-[linear-gradient(180deg,rgba(43,82,156,0.96),rgba(28,54,102,0.98))] text-sky-100 shadow-[0_16px_34px_rgba(18,44,88,0.34)] ring-1 ring-sky-300/16",
+] as const;
+
+function getDetailAvatarTone(value: string): string {
+  const seed = Array.from(value).reduce(
+    (accumulator, character) => accumulator + character.charCodeAt(0),
+    0,
+  );
+
+  return detailAvatarPalette[seed % detailAvatarPalette.length];
 }
 
 function getContactInitials(value: string): string {
@@ -80,24 +99,6 @@ function getContactInitials(value: string): string {
   return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
 }
 
-const avatarPalette = [
-  "bg-[linear-gradient(180deg,rgba(24,104,132,0.96),rgba(16,70,97,0.98))] text-cyan-100 shadow-[0_16px_34px_rgba(8,56,79,0.34)] ring-1 ring-cyan-300/16",
-  "bg-[linear-gradient(180deg,rgba(77,52,156,0.96),rgba(50,33,104,0.98))] text-violet-100 shadow-[0_16px_34px_rgba(40,28,92,0.34)] ring-1 ring-violet-300/16",
-  "bg-[linear-gradient(180deg,rgba(21,117,91,0.96),rgba(15,76,60,0.98))] text-emerald-100 shadow-[0_16px_34px_rgba(13,64,52,0.34)] ring-1 ring-emerald-300/16",
-  "bg-[linear-gradient(180deg,rgba(133,98,24,0.96),rgba(87,63,16,0.98))] text-amber-100 shadow-[0_16px_34px_rgba(78,55,13,0.34)] ring-1 ring-amber-300/16",
-  "bg-[linear-gradient(180deg,rgba(136,44,92,0.96),rgba(87,27,58,0.98))] text-fuchsia-100 shadow-[0_16px_34px_rgba(79,21,52,0.34)] ring-1 ring-fuchsia-300/16",
-  "bg-[linear-gradient(180deg,rgba(43,82,156,0.96),rgba(28,54,102,0.98))] text-sky-100 shadow-[0_16px_34px_rgba(18,44,88,0.34)] ring-1 ring-sky-300/16",
-] as const;
-
-function buildAvatarTone(value: string): string {
-  const seed = Array.from(value).reduce(
-    (accumulator, character) => accumulator + character.charCodeAt(0),
-    0,
-  );
-
-  return avatarPalette[seed % avatarPalette.length];
-}
-
 export default async function ContactsPage(props: PageProps<"/contacts">) {
   const searchParams = await props.searchParams;
   const selectedContactId =
@@ -108,6 +109,11 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
     searchParams.conversation === "with_conversation" ||
     searchParams.conversation === "without_conversation"
       ? searchParams.conversation
+      : "all";
+  const crmFilter =
+    typeof searchParams.crm === "string" &&
+    CRM_STATES.includes(searchParams.crm as CrmState)
+      ? (searchParams.crm as CrmState)
       : "all";
   const importedCount = parseImportMetric(searchParams.imported);
   const duplicatedCount = parseImportMetric(searchParams.duplicated);
@@ -120,6 +126,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
     selectedContactId,
     searchTerm,
     conversationFilter,
+    crmFilter,
   );
   const hasContacts = contactsData.contacts.length > 0;
   const selectedContact = contactsData.selectedContact;
@@ -176,6 +183,15 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                             : contactsData.conversationFilter
                         }
                       />
+                      <input
+                        type="hidden"
+                        name="crm"
+                        value={
+                          contactsData.crmFilter === "all"
+                            ? ""
+                            : contactsData.crmFilter
+                        }
+                      />
                       <button
                         type="submit"
                         className="h-11 shrink-0 rounded-2xl border border-emerald-300/18 bg-[linear-gradient(180deg,rgba(20,118,92,0.98),rgba(14,88,68,0.96))] px-5 text-sm font-semibold text-emerald-50 shadow-[0_16px_34px_rgba(9,58,46,0.28)] transition duration-200 hover:-translate-y-[1px] hover:border-emerald-200/26 hover:bg-[linear-gradient(180deg,rgba(24,132,103,0.98),rgba(16,96,75,0.96))] hover:shadow-[0_22px_40px_rgba(8,49,40,0.34)]"
@@ -200,6 +216,10 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                       params.set("conversation", filterOption);
                     }
 
+                    if (contactsData.crmFilter !== "all") {
+                      params.set("crm", contactsData.crmFilter);
+                    }
+
                     const href = params.toString()
                       ? `/contacts?${params.toString()}`
                       : "/contacts";
@@ -217,6 +237,43 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                         }
                       >
                         {buildConversationFilterLabel(filterOption)}
+                      </a>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {(["all", ...CRM_STATES] as const).map((filterOption) => {
+                    const params = new URLSearchParams();
+
+                    if (contactsData.searchTerm) {
+                      params.set("q", contactsData.searchTerm);
+                    }
+
+                    if (contactsData.conversationFilter !== "all") {
+                      params.set("conversation", contactsData.conversationFilter);
+                    }
+
+                    if (filterOption !== "all") {
+                      params.set("crm", filterOption);
+                    }
+
+                    const href = params.toString()
+                      ? `/contacts?${params.toString()}`
+                      : "/contacts";
+                    const isActive = contactsData.crmFilter === filterOption;
+
+                    return (
+                      <a
+                        key={filterOption}
+                        href={href}
+                        className={
+                          isActive
+                            ? "rounded-2xl border border-[rgba(86,107,167,0.42)] bg-[linear-gradient(180deg,rgba(41,56,89,0.98),rgba(26,39,63,0.96))] px-4 py-2 text-xs font-medium text-foreground shadow-[0_14px_28px_rgba(7,12,24,0.2)]"
+                            : "rounded-2xl border border-[rgba(96,114,170,0.2)] bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-2 text-xs font-medium text-foreground-soft transition duration-200 hover:-translate-y-[1px] hover:border-[rgba(96,114,170,0.34)] hover:bg-[linear-gradient(180deg,rgba(23,35,56,0.96),rgba(15,25,42,0.94))] hover:text-foreground"
+                        }
+                      >
+                        {buildCrmFilterLabel(filterOption)}
                       </a>
                     );
                   })}
@@ -244,72 +301,14 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
               </div>
             </section>
 
-            <section className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-[30px] border border-[rgba(118,138,195,0.18)] bg-[radial-gradient(circle_at_top,rgba(69,98,176,0.14),transparent_26%),linear-gradient(180deg,rgba(19,29,47,0.98),rgba(13,22,38,0.95))] shadow-[0_28px_72px_rgba(2,6,23,0.24)]">
-              <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-                <h3 className="text-xl font-semibold text-foreground">
-                  Directorio
-                </h3>
-                <StatusBadge tone="success">Listado real</StatusBadge>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {hasContacts ? (
-                  <div className="divide-y divide-border/70">
-                    {contactsData.contacts.map((contact) => {
-                      const isActive = contact.id === selectedContact?.id;
-                      const hasConversation = Boolean(contact.conversationId);
-
-                      return (
-                        <Link
-                          key={contact.id}
-                          href={buildContactsHref(
-                            contact.id,
-                            contactsData.searchTerm,
-                            contactsData.conversationFilter,
-                          )}
-                          className={`group flex items-center gap-4 px-5 py-4 transition duration-200 ${
-                            isActive
-                              ? "bg-[linear-gradient(180deg,rgba(34,50,78,0.98),rgba(24,37,60,0.96))] shadow-[inset_2px_0_0_rgba(115,147,231,0.92)]"
-                              : "hover:bg-[linear-gradient(180deg,rgba(24,36,58,0.88),rgba(18,29,48,0.82))] hover:shadow-[inset_1px_0_0_rgba(108,131,202,0.48)]"
-                          }`}
-                        >
-                          <div
-                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition duration-200 group-hover:scale-[1.04] ${buildAvatarTone(contact.displayName)}`}
-                          >
-                            {getContactInitials(contact.displayName)}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-base font-semibold text-foreground">
-                              {contact.displayName}
-                            </p>
-                            <p className="mt-1 truncate text-sm text-foreground-soft">
-                              {contact.phone}
-                            </p>
-                          </div>
-
-                          <StatusBadge tone={hasConversation ? "info" : "base"}>
-                            {hasConversation ? "Con conv." : "Sin conv."}
-                          </StatusBadge>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="px-5 py-5">
-                    <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(18,28,45,0.94),rgba(13,22,37,0.92))] px-4 py-5">
-                      <p className="text-sm font-medium text-foreground">
-                        No encontramos contactos para esta busqueda.
-                      </p>
-                      <p className="mt-2 text-xs leading-6 text-foreground-muted/76">
-                        Los contactos reales se crean automaticamente cuando
-                        llegan conversaciones inbound al webhook.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
+            <ContactsWorkspace
+              contacts={contactsData.contacts}
+              conversationFilter={contactsData.conversationFilter}
+              crmFilter={contactsData.crmFilter}
+              hasContacts={hasContacts}
+              searchTerm={contactsData.searchTerm}
+              selectedContactId={selectedContact?.id ?? null}
+            />
           </div>
 
           <div className="flex min-h-[760px] flex-col gap-5">
@@ -324,7 +323,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
 
                   <div className="flex items-center gap-4">
                     <div
-                      className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-semibold ${buildAvatarTone(selectedContact.displayName)}`}
+                      className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-semibold ${getDetailAvatarTone(selectedContact.displayName)}`}
                     >
                       {getContactInitials(selectedContact.displayName)}
                     </div>
@@ -435,6 +434,20 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
                 className="mt-5 flex flex-col gap-4"
               >
                 <input type="hidden" name="q" value={contactsData.searchTerm} />
+                <input
+                  type="hidden"
+                  name="conversation"
+                  value={
+                    contactsData.conversationFilter === "all"
+                      ? ""
+                      : contactsData.conversationFilter
+                  }
+                />
+                <input
+                  type="hidden"
+                  name="crm"
+                  value={contactsData.crmFilter === "all" ? "" : contactsData.crmFilter}
+                />
                 <input
                   type="hidden"
                   name="contact"
