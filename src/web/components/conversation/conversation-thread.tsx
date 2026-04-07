@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { InboxSelection } from "@/app/services/inbox/get-inbox-data";
-import { CRM_STATES, type CrmState } from "@/core/crm/crm-state";
+import { buildCrmStateLabel, buildCrmStateToneClass, CRM_STATES, type CrmState } from "@/core/crm/crm-state";
 import {
   buildQuickReplyStageLabel,
   findNextQuickReplyStage,
@@ -60,42 +60,6 @@ function buildOutboundMessageStatusLabel(
   }
 }
 
-function buildCrmStateLabel(value: CrmState): string {
-  switch (value) {
-    case "nuevo":
-      return "Nuevo";
-    case "pendiente":
-      return "Pendiente";
-    case "presupuesto_enviado":
-      return "Presupuesto enviado";
-    case "agendado":
-      return "Agendado";
-    case "cerrado":
-      return "Cerrado";
-    case "perdido":
-      return "Perdido";
-    default:
-      return "Nuevo";
-  }
-}
-
-function buildCrmStateToneClass(value: CrmState): string {
-  switch (value) {
-    case "pendiente":
-      return "text-warning";
-    case "presupuesto_enviado":
-      return "text-info";
-    case "agendado":
-      return "text-success";
-    case "cerrado":
-      return "text-foreground-soft";
-    case "perdido":
-      return "text-rose-300";
-    case "nuevo":
-    default:
-      return "text-foreground-soft";
-  }
-}
 
 export function ConversationThread({
   conversation,

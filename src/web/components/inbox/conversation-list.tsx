@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { InboxConversation } from "@/app/services/inbox/get-inbox-data";
+import { buildCrmStateLabel, buildCrmStateToneClass, getCrmBadgeStyle } from "@/core/crm/crm-state";
 import { cn } from "@/lib/utils";
 
 type ConversationListProps = {
@@ -51,42 +52,6 @@ function buildControlToneClass(
   }
 }
 
-function buildCrmStateLabel(state: InboxConversation["crmState"]): string {
-  switch (state) {
-    case "nuevo":
-      return "Nuevo";
-    case "pendiente":
-      return "Pendiente";
-    case "presupuesto_enviado":
-      return "Presupuesto";
-    case "agendado":
-      return "Agendado";
-    case "cerrado":
-      return "Cerrado";
-    case "perdido":
-      return "Perdido";
-    default:
-      return "Nuevo";
-  }
-}
-
-function buildCrmToneClass(state: InboxConversation["crmState"]): string {
-  switch (state) {
-    case "pendiente":
-      return "text-warning";
-    case "presupuesto_enviado":
-      return "text-info";
-    case "agendado":
-      return "text-success";
-    case "cerrado":
-      return "text-foreground-soft";
-    case "perdido":
-      return "text-rose-300";
-    case "nuevo":
-    default:
-      return "text-foreground-soft";
-  }
-}
 
 export function ConversationList({
   conversations,
@@ -145,14 +110,19 @@ export function ConversationList({
             <p className="mt-3 line-clamp-2 text-xs leading-6 text-foreground-muted/76">
               {conversation.preview}
             </p>
-            <p
-              className={cn(
-                "mt-2 text-[11px] uppercase tracking-[0.08em]",
-                buildCrmToneClass(conversation.crmState),
-              )}
-            >
-              {buildCrmStateLabel(conversation.crmState)}
-            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
+                  getCrmBadgeStyle(conversation.crmState).bg,
+                  getCrmBadgeStyle(conversation.crmState).text,
+                  getCrmBadgeStyle(conversation.crmState).border,
+                  "border",
+                )}
+              >
+                {buildCrmStateLabel(conversation.crmState)}
+              </span>
+            </div>
             <p
               className={cn(
                 "mt-2 text-[11px] uppercase tracking-[0.08em]",

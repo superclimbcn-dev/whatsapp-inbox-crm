@@ -18,6 +18,76 @@ export function isCrmState(value: string): value is CrmState {
 }
 
 // ============================================================================
+// CRM State Labels and Styling (Etiquetas y Estilos de Estados CRM)
+// ============================================================================
+
+/**
+ * Obtiene la etiqueta legible para un estado CRM.
+ */
+export function buildCrmStateLabel(state: CrmState): string {
+  switch (state) {
+    case "nuevo":
+      return "Nuevo";
+    case "pendiente":
+      return "Pendiente";
+    case "presupuesto_enviado":
+      return "Presupuesto";
+    case "agendado":
+      return "Agendado";
+    case "cerrado":
+      return "Cerrado";
+    case "perdido":
+      return "Perdido";
+    default:
+      return "Nuevo";
+  }
+}
+
+/**
+ * Obtiene la clase de color Tailwind para un estado CRM.
+ */
+export function buildCrmStateToneClass(state: CrmState): string {
+  switch (state) {
+    case "pendiente":
+      return "text-warning";
+    case "presupuesto_enviado":
+      return "text-info";
+    case "agendado":
+      return "text-success";
+    case "cerrado":
+      return "text-foreground-soft";
+    case "perdido":
+      return "text-rose-300";
+    case "nuevo":
+    default:
+      return "text-foreground-soft";
+  }
+}
+
+/**
+ * Obtiene el estilo completo para badges de estado CRM.
+ * Retorna clases para background, texto e border.
+ */
+export function getCrmBadgeStyle(state: CrmState): { bg: string; text: string; border: string } {
+  switch (state) {
+    case "nuevo":
+      return { bg: "bg-foreground-soft/15", text: "text-foreground-soft", border: "border-foreground-soft/25" };
+    case "pendiente":
+      return { bg: "bg-warning/15", text: "text-warning", border: "border-warning/25" };
+    case "presupuesto_enviado":
+      return { bg: "bg-info/15", text: "text-info", border: "border-info/25" };
+    case "agendado":
+      return { bg: "bg-success/15", text: "text-success", border: "border-success/25" };
+    case "cerrado":
+      return { bg: "bg-foreground-soft/10", text: "text-foreground-soft", border: "border-foreground-soft/20" };
+    case "perdido":
+      return { bg: "bg-rose-500/15", text: "text-rose-300", border: "border-rose-500/25" };
+    default:
+      return { bg: "bg-foreground-soft/15", text: "text-foreground-soft", border: "border-foreground-soft/25" };
+  }
+}
+
+// ============================================================================
 // Tag Color System (Sistema de Colores de Tags)
 // ============================================================================
 
