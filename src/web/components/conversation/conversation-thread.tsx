@@ -83,7 +83,7 @@ export function ConversationThread({
   const submitInFlightRef = useRef(false);
   const [showQuickReplyPalette, setShowQuickReplyPalette] = useState(false);
   const [quickReplyPalettePosition, setQuickReplyPalettePosition] = useState<{
-    top: number;
+    bottom: number;
     left: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -578,12 +578,15 @@ export function ConversationThread({
                     setTimeout(() => {
                       if (inputRef.current) {
                         const rect = inputRef.current.getBoundingClientRect();
+                        // Calculate bottom position: distance from bottom of viewport to top of input
+                        // This positions the palette above the input
+                        const bottom = window.innerHeight - rect.top + 8;
                         setQuickReplyPalettePosition({
-                          top: rect.top - 350,
+                          bottom,
                           left: rect.left,
                         });
                         setShowQuickReplyPalette(true);
-                        console.log("Palette opened at position:", { top: rect.top - 350, left: rect.left });
+                        console.log("Palette opened at position:", { bottom, left: rect.left, windowHeight: window.innerHeight, inputTop: rect.top });
                       }
                     }, 0);
                   }

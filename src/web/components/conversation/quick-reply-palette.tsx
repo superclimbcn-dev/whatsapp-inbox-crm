@@ -9,7 +9,7 @@ type QuickReplyPaletteProps = {
   quickReplies: QuickReply[];
   onSelect: (reply: QuickReply) => void;
   onClose: () => void;
-  anchorPosition?: { top: number; left: number };
+  anchorPosition?: { top?: number; bottom?: number; left: number };
 };
 
 export function QuickReplyPalette({
@@ -82,10 +82,10 @@ export function QuickReplyPalette({
     return (
       <div
         ref={containerRef}
-        className="fixed z-[999] rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+        className="fixed z-[9999] rounded-2xl border-2 border-red-500 bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-4 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
         style={
           anchorPosition
-            ? { top: anchorPosition.top, left: anchorPosition.left }
+            ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
             : undefined
         }
       >
@@ -99,10 +99,10 @@ export function QuickReplyPalette({
   return (
     <div
       ref={containerRef}
-      className="fixed z-[999] max-h-80 w-80 overflow-y-auto rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
+      className="fixed z-[9999] max-h-80 w-80 overflow-y-auto rounded-2xl border-2 border-red-500 bg-[linear-gradient(180deg,rgba(20,32,53,0.96),rgba(12,21,36,0.92))] p-2 shadow-[0_24px_65px_rgba(2,6,23,0.48)] backdrop-blur-xl"
       style={
         anchorPosition
-          ? { top: anchorPosition.top, left: anchorPosition.left }
+          ? { bottom: anchorPosition.bottom, left: anchorPosition.left }
           : undefined
       }
     >
