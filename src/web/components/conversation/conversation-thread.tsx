@@ -458,8 +458,13 @@ export function ConversationThread({
 
       <div className="mt-6 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
         {conversation.messages.length === 0 ? (
-          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.76))] px-5 py-6 text-sm text-foreground-muted/82">
-            Esta conversacion todavia no tiene mensajes visibles.
+          <div className="rounded-2xl border border-border-strong bg-[linear-gradient(180deg,rgba(11,20,35,0.9),rgba(13,23,39,0.76))] px-5 py-6 text-center">
+            <p className="text-sm text-foreground-muted/82">
+              Inicia esta conversacion enviando un mensaje abajo.
+            </p>
+            <p className="mt-2 text-xs text-foreground-muted/60">
+              El primer mensaje se enviara al contacto a traves de WhatsApp.
+            </p>
           </div>
         ) : (
           conversation.messages.map((message) => {
