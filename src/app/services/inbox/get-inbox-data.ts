@@ -302,6 +302,7 @@ export async function getInboxData(
   selectedConversationId?: string,
   crmFilter: CrmState | "all" = "all",
   ownerFilter: InboxData["ownerFilter"] = "all",
+  includeArchived: boolean = false,
 ): Promise<InboxData> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -330,7 +331,7 @@ export async function getInboxData(
     throw new Error("No pudimos cargar la configuracion del inbox.");
   }
 
-  const { data: conversationRows, error: conversationsError } = await admin
+  let conversationsQuery = admin
     .from("conversations")
     .select(
       "id, contact_id, assigned_user_id, status, last_message_at, created_at, metadata",
@@ -340,11 +341,18 @@ export async function getInboxData(
     .order("created_at", { ascending: false })
     .returns<ConversationRow[]>();
 
+  const { data: conversationRows, error: conversationsError } = await conversationsQuery;
+
   if (conversationsError || !conversationRows) {
     throw new Error("No pudimos cargar las conversaciones del inbox.");
   }
 
-  if (conversationRows.length === 0) {
+  // Filtrar conversas fechadas/arquivadas por padrão (no lado do cliente)
+  const filteredConversations = includeArchived
+    ? conversationRows
+    : conversationRows.filter((c) => c.status !== "closed");
+
+  if (filteredConversations.length === 0) {
     return {
       conversations: [],
       crmFilter,
@@ -354,8 +362,8 @@ export async function getInboxData(
     };
   }
 
-  const contactIds = [...new Set(conversationRows.map((item) => item.contact_id))];
-  const conversationIds = conversationRows.map((item) => item.id);
+  const contactIds = [...new Set(filteredConversations.map((item) => item.contact_id))];
+  const conversationIds = filteredConversations.map((item) => item.id);
   const assignedUserIds = [
     ...new Set(
       conversationRows
@@ -408,7 +416,7 @@ export async function getInboxData(
   const contactsMap = new Map(contacts.map((contact) => [contact.id, contact]));
   const latestMessageByConversation = new Map<string, MessagePreviewRow>();
   const metadataByConversationId = new Map(
-    conversationRows.map((conversation) => [conversation.id, conversation.metadata]),
+    filteredConversations.map((conversation) => [conversation.id, conversation.metadata]),
   );
   const usersMap = new Map(users.map((item) => [item.id, item]));
 
@@ -418,7 +426,7 @@ export async function getInboxData(
     }
   }
 
-  const conversations = conversationRows
+  const conversations = filteredConversations
     .map((conversation) => {
       const contact = contactsMap.get(conversation.contact_id);
       const latestMessage = latestMessageByConversation.get(conversation.id);

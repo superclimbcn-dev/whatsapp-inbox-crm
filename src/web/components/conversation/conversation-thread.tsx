@@ -172,6 +172,10 @@ export function ConversationThread({
     setError(null);
     setIsSavingCrm(true);
 
+    // Atualização otimista - salva localmente primeiro
+    const previousCrmState = crmState;
+    const previousInternalNote = crmInternalNote;
+
     try {
       const response = await fetch("/api/conversations/crm", {
         method: "POST",
@@ -190,12 +194,19 @@ export function ConversationThread({
         | null;
 
       if (!response.ok) {
+        // Reverter em caso de erro
+        setCrmState(previousCrmState);
+        setCrmInternalNote(previousInternalNote);
         setError(result?.error ?? "No pudimos guardar el contexto CRM.");
         return;
       }
 
-      router.refresh();
+      // Sucesso - não precisa fazer refresh se foi otimista
+      // router.refresh();
     } catch {
+      // Reverter em caso de erro
+      setCrmState(previousCrmState);
+      setCrmInternalNote(previousInternalNote);
       setError("No pudimos guardar el contexto CRM.");
     } finally {
       setIsSavingCrm(false);

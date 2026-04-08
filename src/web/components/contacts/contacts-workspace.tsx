@@ -427,9 +427,30 @@ export function ContactsWorkspace({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => {
-                            // TODO: Implementar criação de conversa
-                            console.log("Criar conversa para:", contact.phone);
+                          onClick={async () => {
+                            try {
+                              const response = await fetch("/api/conversations/create", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                  contactId: contact.id,
+                                }),
+                              });
+
+                              const result = await response.json();
+
+                              if (!response.ok) {
+                                throw new Error(result.error || "No pudimos crear la conversación.");
+                              }
+
+                              // Redirecionar para a conversa criada
+                              router.push(`/inbox?conversation=${result.conversationId}`);
+                            } catch (error) {
+                              console.error("Error al crear conversación:", error);
+                              // Aqui você pode mostrar um toast ou mensagem de erro ao usuário
+                            }
                           }}
                           className="rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-3 py-1 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
                         >

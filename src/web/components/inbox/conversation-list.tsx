@@ -60,7 +60,7 @@ export function ConversationList({
   selectedConversationId,
 }: ConversationListProps) {
   return (
-    <div className="mt-4 h-full space-y-3 overflow-y-auto pr-1">
+    <div className="mt-3 h-full space-y-2 overflow-y-auto pr-1">
       {conversations.map((conversation) => {
         const isActive = conversation.id === selectedConversationId;
 
@@ -73,7 +73,7 @@ export function ConversationList({
               ...(ownerFilter !== "all" ? { owner: ownerFilter } : {}),
             }).toString()}`}
             className={cn(
-              "block rounded-2xl border px-4 py-4 shadow-[var(--shadow-layer)] transition-all duration-200",
+              "block rounded-xl border px-3 py-3 shadow-[var(--shadow-layer)] transition-all duration-200",
               isActive
                 ? "border-accent/28 bg-[linear-gradient(180deg,rgba(32,46,74,0.98),rgba(18,29,48,0.95))] shadow-[var(--shadow-accent)]"
                 : "border-border-strong bg-[linear-gradient(180deg,rgba(19,30,49,0.98),rgba(14,24,40,0.94))] hover:border-accent/24 hover:bg-[linear-gradient(180deg,rgba(24,37,60,0.98),rgba(16,27,45,0.96))] hover:shadow-[0_18px_38px_rgba(2,6,23,0.24)]",
@@ -92,7 +92,7 @@ export function ConversationList({
                 <p className="text-[11px] text-foreground-soft">
                   {formatConversationDate(conversation.lastMessageAt)}
                 </p>
-                <div className="mt-2 flex items-center justify-end gap-2">
+                <div className="mt-1 flex items-center justify-end gap-2">
                   <span
                     className={cn(
                       "size-1.5 rounded-full",
@@ -101,16 +101,16 @@ export function ConversationList({
                       conversation.status === "closed" && "bg-foreground-soft",
                     )}
                   />
-                  <span className="text-[11px] uppercase tracking-[0.08em] text-foreground-soft">
+                  <span className="text-[10px] uppercase tracking-[0.08em] text-foreground-soft">
                     {buildStatusLabel(conversation.status)}
                   </span>
                 </div>
               </div>
             </div>
-            <p className="mt-3 line-clamp-2 text-xs leading-6 text-foreground-muted/76">
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-foreground-muted/76">
               {conversation.preview}
             </p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-1 flex items-center gap-2">
               <span
                 className={cn(
                   "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
@@ -125,7 +125,7 @@ export function ConversationList({
             </div>
             <p
               className={cn(
-                "mt-2 text-[11px] uppercase tracking-[0.08em]",
+                "mt-1 text-[10px] uppercase tracking-[0.08em]",
                 buildControlToneClass(conversation.controlState),
               )}
             >

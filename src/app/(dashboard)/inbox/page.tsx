@@ -42,6 +42,7 @@ function buildInboxHref(
   conversationId: string | undefined,
   crmFilter: CrmState | "all",
   ownerFilter: "all" | "free" | "mine" | "other",
+  includeArchived?: boolean,
 ): string {
   const params = new URLSearchParams();
 
@@ -55,6 +56,10 @@ function buildInboxHref(
 
   if (ownerFilter !== "all") {
     params.set("owner", ownerFilter);
+  }
+
+  if (includeArchived) {
+    params.set("archived", "true");
   }
 
   const query = params.toString();
@@ -92,10 +97,13 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
     searchParams.owner === "other"
       ? searchParams.owner
       : "all";
+  const includeArchived =
+    searchParams.archived === "true" || searchParams.archived === "1";
   const inboxData = await getInboxData(
     selectedConversationId,
     crmFilter,
     ownerFilter,
+    includeArchived,
   );
   const hasConversations = inboxData.conversations.length > 0;
   const selectedConversation = inboxData.selectedConversation;
@@ -148,29 +156,47 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
             })}
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(["all", "mine", "free", "other"] as const).map((filterOption) => {
-              const isActive = inboxData.ownerFilter === filterOption;
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(["all", "mine", "free", "other"] as const).map((filterOption) => {
+                const isActive = inboxData.ownerFilter === filterOption;
 
-              return (
-                <a
-                  key={filterOption}
-                  href={buildInboxHref(
-                    selectedConversationId,
-                    inboxData.crmFilter,
-                    filterOption,
-                  )}
-                  className={
-                    isActive
-                      ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
-                      : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
-                  }
-                >
-                  {buildOwnerFilterLabel(filterOption)}
-                </a>
-              );
-            })}
-          </div>
+                return (
+                  <a
+                    key={filterOption}
+                    href={buildInboxHref(
+                      selectedConversationId,
+                      inboxData.crmFilter,
+                      filterOption,
+                    )}
+                    className={
+                      isActive
+                        ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                        : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                    }
+                  >
+                    {buildOwnerFilterLabel(filterOption)}
+                  </a>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={buildInboxHref(
+                  selectedConversationId,
+                  inboxData.crmFilter,
+                  inboxData.ownerFilter,
+                  !includeArchived,
+                )}
+                className={
+                  includeArchived
+                    ? "rounded-2xl border border-[rgba(88,108,176,0.44)] bg-[linear-gradient(180deg,rgba(66,84,142,0.96),rgba(41,55,98,0.98))] px-4 py-2 text-xs font-medium text-white shadow-[0_12px_28px_rgba(14,20,38,0.26)]"
+                    : "rounded-2xl border border-[rgba(106,124,184,0.22)] bg-[linear-gradient(180deg,rgba(20,30,49,0.96),rgba(13,22,38,0.94))] px-4 py-2 text-xs font-medium text-foreground-soft transition hover:border-[rgba(106,124,184,0.36)] hover:bg-[linear-gradient(180deg,rgba(27,39,63,0.98),rgba(16,26,44,0.96))] hover:text-foreground"
+                }
+              >
+                {includeArchived ? "Ocultar arquivados" : "Ver arquivados"}
+              </a>
+            </div>
         </div>
 
         <div className="grid min-h-0 flex-1 divide-y divide-border xl:grid-cols-[300px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
